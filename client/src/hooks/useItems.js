@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { INITIAL_DATA } from '../data/initialData.js';
 
 const API_BASE = '/api/items';
@@ -8,6 +8,7 @@ export function useItems() {
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const updateQueueRef = useRef({});
 
   const currentItem = useMemo(() => {
     if (!items.length) return null;
@@ -48,6 +49,34 @@ export function useItems() {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }, []);
 
+  const flushUpdate = useCallback(async (id) => {
+    const entry = updateQueueRef.current[id];
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    updateQueueRef.current[id] = null;
+
+    try {
+      await fetch(`${API_BASE}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry.patch)
+      });
+    } catch (err) {
+      setError(err);
+    }
+  }, []);
+
+  const updateItem = useCallback((id, patch) => {
+    if (!id) return;
+    updateItemLocal(id, patch);
+
+    const existing = updateQueueRef.current[id] || { patch: {}, timer: null };
+    existing.patch = { ...existing.patch, ...patch };
+    clearTimeout(existing.timer);
+    existing.timer = setTimeout(() => flushUpdate(id), 400);
+    updateQueueRef.current[id] = existing;
+  }, [flushUpdate, updateItemLocal]);
+
   const addItem = useCallback(async (payload) => {
     try {
       const res = await fetch(API_BASE, {
@@ -74,6 +103,19 @@ export function useItems() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
+  const removeItem = useCallback(async (id) => {
+    if (!id) return false;
+    try {
+      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      removeItemLocal(id);
+      return true;
+    } catch (err) {
+      setError(err);
+      return false;
+    }
+  }, [removeItemLocal]);
+
   return {
     items,
     setItems,
@@ -83,7 +125,9 @@ export function useItems() {
     status,
     error,
     updateItemLocal,
+    updateItem,
     addItem,
-    removeItemLocal
+    removeItemLocal,
+    removeItem
   };
 }

@@ -13,9 +13,9 @@ export default function App() {
     selectedId,
     setSelectedId,
     currentItem,
-    updateItemLocal,
+    updateItem,
     addItem,
-    removeItemLocal
+    removeItem
   } = useItems();
 
   const srcDoc = useMemo(() => {
@@ -39,7 +39,7 @@ export default function App() {
 
   const handleUpdateCode = (type, value) => {
     if (!selectedId) return;
-    updateItemLocal(selectedId, { [type]: value });
+    updateItem(selectedId, { [type]: value });
   };
 
   const handleAddItem = async () => {
@@ -54,9 +54,10 @@ export default function App() {
     if (!item) return;
   };
 
-  const handleRemoveItem = () => {
+  const handleRemoveItem = async () => {
     if (!selectedId || items.length <= 1) return;
-    removeItemLocal(selectedId);
+    const removed = await removeItem(selectedId);
+    if (!removed) return;
     const next = items.find((item) => item.id !== selectedId);
     if (next) setSelectedId(next.id);
   };
