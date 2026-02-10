@@ -8,6 +8,7 @@ import { useItems } from './hooks/useItems.js';
 export default function App() {
   const [activeTab, setActiveTab] = useState('html');
   const [showAddItemModal, setShowAddItemModal] = useState(false); // State for modal visibility
+  const [refreshKey, setRefreshKey] = useState(0); // State to force iframe refresh
   const isBooting = useBoot(600);
   const { size, startResize } = useResize();
   const {
@@ -44,11 +45,22 @@ export default function App() {
         </body>
       </html>
     `;
-  }, [currentItem]);
+  }, [currentItem, refreshKey]); // Add refreshKey as a dependency
 
   const handleUpdateCode = (type, value) => {
     if (!selectedId) return;
     updateItem(selectedId, { [type]: value });
+  };
+
+  const handleSaveItem = () => {
+    if (!selectedId || !currentItem) return;
+    updateItem(selectedId, currentItem); // Persist currentItem's state
+    console.log('Item saved:', currentItem.name);
+  };
+
+  const handleRefreshDisplay = () => {
+    setRefreshKey(prevKey => prevKey + 1); // Increment key to force re-render of iframe
+    console.log('Display refreshed.');
   };
 
   // Modified handleAddItem to accept a payload directly from the modal
@@ -59,7 +71,8 @@ export default function App() {
       type: 'UI',
       html: '',
       css: '',
-      js: ''
+      js: '',
+      all: ''
     });
 
     if (!item) {
@@ -96,6 +109,8 @@ export default function App() {
         onAddItem={() => setShowAddItemModal(true)} // Open modal when add is clicked
         onRemoveItem={handleRemoveItem}
         onUpdateItem={updateItem}
+        onSave={handleSaveItem} // Pass save handler
+        onRefreshDisplay={handleRefreshDisplay} // Pass refresh handler
       />
       {/* Render the AddItemModal */}
       <AddItemModal

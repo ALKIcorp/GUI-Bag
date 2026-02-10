@@ -1,4 +1,4 @@
-import { Code2, Braces, Terminal } from 'lucide-react';
+import { Code2, Braces, Terminal, RefreshCcw } from 'lucide-react';
 
 const TABS = [
   { id: 'html', Icon: Code2, label: 'HTML' },
@@ -7,10 +7,10 @@ const TABS = [
   { id: 'all', Icon: Code2, label: 'ALL' } // New 'All' tab
 ];
 
-export default function CodeEditor({ activeTab, onChangeTab, value, onChange }) {
+export default function CodeEditor({ activeTab, onChangeTab, value, onChange, onRefreshPreview }) {
   return (
     <div className="w-[58%] p-3 flex flex-col gap-3">
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center gap-2 relative"> {/* Add relative for absolute positioning */}
         {TABS.map(({ id, Icon, label }) => ( // Destructure label
           <button
             key={id}
@@ -22,6 +22,14 @@ export default function CodeEditor({ activeTab, onChangeTab, value, onChange }) 
             <span className="text-[6px] font-black mt-0.5 uppercase">{label}</span> {/* Use label */}
           </button>
         ))}
+        {/* Refresh Button for Code Editor */}
+        <button
+          onClick={onRefreshPreview}
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center border-b-[3px] border-blue-900 active:border-b-0 active:translate-y-0.5 shadow-lg text-white"
+          title="Refresh Code Preview"
+        >
+          <RefreshCcw size={16} />
+        </button>
       </div>
 
       <div className="flex-1 bg-[#0a0a0a] rounded-xl border-4 border-[#151515] flex flex-col shadow-inner overflow-hidden">

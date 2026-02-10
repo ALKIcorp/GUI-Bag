@@ -12,7 +12,8 @@ export default function BottomPanel({
   onUpdateCode,
   onAddItem,
   onRemoveItem,
-  onUpdateItem
+  onUpdateItem,
+  onRefreshPreview // New prop
 }) {
   return (
     <div className="flex-[5] bg-[#a91d3a] border-[8px] border-[#151515] rounded-b-[2rem] relative overflow-hidden flex flex-col">
@@ -22,6 +23,7 @@ export default function BottomPanel({
           onChangeTab={onChangeTab}
           value={currentItem?.[activeTab]}
           onChange={(value) => onUpdateCode(activeTab, value)}
+          onRefreshPreview={onRefreshPreview} // Pass refresh handler to CodeEditor
         />
 
         <ItemList items={items} selectedId={selectedId} onSelect={onSelectItem} onUpdateItem={onUpdateItem} />

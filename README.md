@@ -8,23 +8,62 @@ A separated React + Python stack with a tiny JSON database and a self-processing
 - `db.json` with `nextId` auto-increment
 - `pending.json` queue that auto-flushes into the DB
 
-## How to Run the Application
+## Quick Start with Script (Recommended)
 
-Follow these steps from the project's root directory:
+This script automates starting both the Python backend server and the Vite frontend development server, then automatically opens the application in your browser.
 
-1.  **Set up the client:**
+**Prerequisites:**
+*   Node.js and npm installed (for `npm install` and `npm run build/dev`)
+*   Python 3 installed
+
+**Steps:**
+
+1.  **Ensure client dependencies are installed and built:**
+    If you haven't already, run these commands once from the project root:
     ```bash
     cd client
     npm install
     npm run build
     cd ..
     ```
-2.  **Start the server:**
+2.  **Run the start script:**
+    From the project's root directory, make the script executable and run it:
+    ```bash
+    chmod +x start.sh
+    ./start.sh
+    ```
+    This will launch both servers and open your browser to `http://localhost:5173`. Press `Ctrl+C` in the terminal running the script to stop both servers.
+
+## Manual Setup (Advanced/Debugging)
+
+If you prefer to run the client and server processes separately, or for debugging purposes, follow these steps from the project's root directory:
+
+1.  **Set up the client:**
+    ```bash
+    cd client
+    npm install
+    npm run build # Or npm run dev for development server
+    cd ..
+    ```
+2.  **Start the Python server:**
     ```bash
     python3 server/server.py
     ```
-3.  **Open in browser:**
-    Go to `http://localhost:4177`
+    (Leave this running in a separate terminal)
+
+3.  **Start the client (if not using `npm run dev`):**
+    If you built the client (`npm run build`), the Python server at `http://localhost:4177` will serve the static files.
+
+    If you're using the Vite development server (`npm run dev`), run it in *another* separate terminal:
+    ```bash
+    cd client
+    npm run dev
+    ```
+    (The client will typically be accessible at `http://localhost:5173` and will proxy `/api` calls to the Python server running on port `4177`.)
+
+4.  **Open in browser:**
+    If using `npm run build` and `python3 server/server.py`: Go to `http://localhost:4177`
+    If using `npm run dev`: Go to the URL provided by Vite (typically `http://localhost:5173`)
 
 ## Data Files
 - `server/data/db.json`

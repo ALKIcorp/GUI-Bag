@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "nextId": 4,
-  "updatedAt": "2026-02-10T03:28:31.993902Z",
+  "nextId": 6,
+  "updatedAt": "2026-02-10T03:42:15.557639Z",
   "items": [
     {
       "id": "1",
@@ -23,11 +23,20 @@
       "id": "3",
       "name": "Volume Bar from Hell",
       "type": "UI",
-      "html": "",
-      "css": "/* THE WORST VOLUME CONTROL EVER MADE */\n\n.volume-wrapper {\n  width: 400px;\n  height: 40px;\n  margin: 100px;\n  transform: rotate(180deg) skew(12deg, -8deg);\n  background: repeating-linear-gradient(\n    45deg,\n    #ff00ff,\n    #ff00ff 5px,\n    #00ffff 5px,\n    #00ffff 10px\n  );\n  animation: shake 0.3s infinite;\n  cursor: not-allowed;\n}\n\n.volume-bar {\n  height: 100%;\n  width: 63%;\n  background: linear-gradient(\n    to right,\n    lime,\n    red,\n    yellow,\n    cyan,\n    magenta\n  );\n  filter: blur(1.5px) contrast(300%);\n  transition: width 0.05s linear;\n}\n\n.volume-wrapper:hover .volume-bar {\n  width: 17%;\n  transform: scaleY(1.4) rotate(7deg);\n}\n\n@keyframes shake {\n  0% { transform: translate(0, 0) rotate(180deg); }\n  25% { transform: translate(3px, -2px) rotate(182deg); }\n  50% { transform: translate(-4px, 3px) rotate(179deg); }\n  75% { transform: translate(2px, 4px) rotate(181deg); }\n  100% { transform: translate(0, 0) rotate(180deg); }\n}\n",
-      "js": "",
+      "html": "<div class=\"volume-wrapper\" id=\"volumeWrapper\">\n  <div class=\"volume-bar\" id=\"volumeBar\"></div>\n</div>\n\n<p class=\"label\">Volume (probably)</p>\n\n<script src=\"script.js\"></script>",
+      "css": "body {\n  background: #000;\n  color: #fff;\n  font-family: serif;\n}\n\n.label {\n  margin-top: 20px;\n}\n\n.volume-wrapper {\n  width: 400px;\n  height: 40px;\n  background: repeating-linear-gradient(\n    45deg,\n    #ff00ff,\n    #ff00ff 6px,\n    #00ffff 6px,\n    #00ffff 12px\n  );\n  transform: rotate(180deg) skew(12deg, -8deg);\n  animation: shake 0.25s infinite;\n  overflow: hidden;\n}\n\n.volume-bar {\n  height: 100%;\n  width: 50%;\n  background: linear-gradient(\n    to right,\n    lime,\n    red,\n    yellow,\n    cyan,\n    magenta\n  );\n  filter: blur(1.5px) contrast(300%);\n}\n\n@keyframes shake {\n  0%   { transform: rotate(180deg) translate(0, 0); }\n  50%  { transform: rotate(182deg) translate(3px, -2px); }\n  100% { transform: rotate(180deg) translate(0, 0); }\n}",
+      "js": "const wrapper = document.getElementById(\"volumeWrapper\");\nconst bar = document.getElementById(\"volumeBar\");\n\nwrapper.addEventListener(\"mousemove\", (e) => {\n  const rect = wrapper.getBoundingClientRect();\n  const x = e.clientX - rect.left;\n\n  let volume = 100 - (x / rect.width) * 100;\n  volume += Math.random() * 30 - 15;\n\n  volume = Math.max(0, Math.min(100, volume));\n  bar.style.width = volume + \"%\";\n});",
       "createdAt": "2026-02-10T03:25:56.260852Z",
-      "updatedAt": "2026-02-10T03:28:31.993898Z"
+      "updatedAt": "2026-02-10T03:36:38.838896Z"
+    },
+    {
+      "id": "4",
+      "name": "Cool Bar",
+      "type": "UI",
+      "html": "",
+      "css": "",
+      "js": "",
+      "createdAt": "2026-02-10T03:41:26.183154Z"
     }
   ]
 }
