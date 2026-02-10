@@ -78,6 +78,7 @@ export default function App() {
         onUpdateCode={handleUpdateCode}
         onAddItem={handleAddItem}
         onRemoveItem={handleRemoveItem}
+        onUpdateItem={updateItem}
       />
     </div>
   );

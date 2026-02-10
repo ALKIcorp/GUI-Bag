@@ -13,7 +13,12 @@ export default function FooterNav({ canRemove, onAdd, onRemove }) {
 
       <div className="flex gap-1.5 items-center">
         <button
-          onClick={onAdd}
+          onClick={() => {
+            const name = window.prompt('Enter item name:');
+            if (name) {
+              onAdd({ name });
+            }
+          }}
           className="w-7 h-7 bg-green-600 rounded flex items-center justify-center border-b-[3px] border-green-900 active:border-b-0 active:translate-y-0.5"
         >
           <Plus size={14} />

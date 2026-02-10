@@ -15,7 +15,8 @@ export default function ConsoleWindow({
   onSelectItem,
   onUpdateCode,
   onAddItem,
-  onRemoveItem
+  onRemoveItem,
+  onUpdateItem
 }) {
   return (
     <div
@@ -39,6 +40,7 @@ export default function ConsoleWindow({
         onUpdateCode={onUpdateCode}
         onAddItem={onAddItem}
         onRemoveItem={onRemoveItem}
+        onUpdateItem={onUpdateItem}
       />
 
       <ResizeHandle onMouseDown={onResizeStart} />

@@ -93,7 +93,13 @@ class AlkiHandler(SimpleHTTPRequestHandler):
     if os.path.exists(CLIENT_DIST):
       if parsed.path == '/' or parsed.path == '':
         self.path = '/index.html'
-      return super().do_GET()
+      
+      cwd = os.getcwd()
+      os.chdir(CLIENT_DIST)
+      try:
+        return super().do_GET()
+      finally:
+        os.chdir(cwd)
 
     self._set_headers(HTTPStatus.NOT_FOUND)
     self.wfile.write(json.dumps({"error": "Build the client first (npm run build)."}).encode('utf-8'))
@@ -216,7 +222,6 @@ class AlkiHandler(SimpleHTTPRequestHandler):
 
 
 def run_server(host='0.0.0.0', port=4177):
-  os.chdir(CLIENT_DIST if os.path.exists(CLIENT_DIST) else os.path.dirname(BASE_DIR))
   server = HTTPServer((host, port), AlkiHandler)
   print(f"Alki server running on http://{host}:{port}")
   server.serve_forever()

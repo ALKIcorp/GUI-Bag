@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { INITIAL_DATA } from '../data/initialData.js';
+import { generateDefaultName } from '../utils/nameGenerator.js';
 
 const API_BASE = '/api/items';
 
@@ -78,11 +79,16 @@ export function useItems() {
   }, [flushUpdate, updateItemLocal]);
 
   const addItem = useCallback(async (payload) => {
+    const itemToAdd = { ...payload };
+    if (!itemToAdd.name) {
+      itemToAdd.name = generateDefaultName(items);
+    }
+
     try {
       const res = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(itemToAdd)
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -97,7 +103,7 @@ export function useItems() {
     }
 
     return null;
-  }, []);
+  }, [items]);
 
   const removeItemLocal = useCallback((id) => {
     setItems((prev) => prev.filter((item) => item.id !== id));

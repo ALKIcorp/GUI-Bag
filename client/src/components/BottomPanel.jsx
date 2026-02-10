@@ -11,7 +11,8 @@ export default function BottomPanel({
   onSelectItem,
   onUpdateCode,
   onAddItem,
-  onRemoveItem
+  onRemoveItem,
+  onUpdateItem
 }) {
   return (
     <div className="flex-[5] bg-[#a91d3a] border-[8px] border-[#151515] rounded-b-[2rem] relative overflow-hidden flex flex-col">
@@ -23,7 +24,7 @@ export default function BottomPanel({
           onChange={(value) => onUpdateCode(activeTab, value)}
         />
 
-        <ItemList items={items} selectedId={selectedId} onSelect={onSelectItem} />
+        <ItemList items={items} selectedId={selectedId} onSelect={onSelectItem} onUpdateItem={onUpdateItem} />
       </div>
 
       <FooterNav canRemove={items.length > 1} onAdd={onAddItem} onRemove={onRemoveItem} />

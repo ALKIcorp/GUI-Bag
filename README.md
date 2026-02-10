@@ -8,40 +8,23 @@ A separated React + Python stack with a tiny JSON database and a self-processing
 - `db.json` with `nextId` auto-increment
 - `pending.json` queue that auto-flushes into the DB
 
-## Quick Start
+## How to Run the Application
 
-1. Install client deps and build
-```bash
-cd client
-npm install
-npm run build
-```
+Follow these steps from the project's root directory:
 
-2. Start the Python server
-```bash
-cd ..
-python3 server/server.py
-```
-
-3. Open the app
-```bash
-http://localhost:4177
-```
-
-## Dev Mode (optional)
-Run the API server in one terminal:
-```bash
-python3 server/server.py
-```
-
-Run the client dev server in another terminal:
-```bash
-cd client
-npm install
-npm run dev
-```
-
-The client proxies `/api` to the Python server on port `4177`.
+1.  **Set up the client:**
+    ```bash
+    cd client
+    npm install
+    npm run build
+    cd ..
+    ```
+2.  **Start the server:**
+    ```bash
+    python3 server/server.py
+    ```
+3.  **Open in browser:**
+    Go to `http://localhost:4177`
 
 ## Data Files
 - `server/data/db.json`
