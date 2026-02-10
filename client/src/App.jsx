@@ -27,7 +27,7 @@ export default function App() {
       <html>
         <head>
           <style>
-            body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fff; font-family: sans-serif; overflow: hidden; }
+            body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #1a1a1a; font-family: sans-serif; overflow: hidden; }
             ${currentItem.css}
           </style>
         </head>
