@@ -22,6 +22,13 @@ export default function App() {
 
   const srcDoc = useMemo(() => {
     if (!currentItem) return '';
+
+    // If 'all' code is present, use only that.
+    if (currentItem.all && currentItem.all.trim() !== '') {
+      return currentItem.all;
+    }
+
+    // Otherwise, combine html, css, and js.
     return `
       <!DOCTYPE html>
       <html>

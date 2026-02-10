@@ -19,7 +19,8 @@ export const INITIAL_DATA = [
   transform: translateY(2px);
   box-shadow: 0 2px 0 #d63031;
 }`,
-    js: "document.querySelector('.potion-btn').onclick = () => console.log('HP Restored!');"
+    js: "",
+    all: ""
   },
   {
     id: '2',
@@ -35,6 +36,7 @@ export const INITIAL_DATA = [
   animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`,
-    js: ''
+    js: "",
+    all: ""
   }
 ];

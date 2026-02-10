@@ -26,7 +26,10 @@ export function useItems() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!mounted) return;
-        const nextItems = data?.items?.length ? data.items : INITIAL_DATA;
+        const nextItems = (data?.items?.length ? data.items : INITIAL_DATA).map(item => ({
+          ...item,
+          all: item.all ?? '' // Ensure 'all' property exists
+        }));
         setItems(nextItems);
         setSelectedId(nextItems[0]?.id ?? null);
         setStatus('ready');
@@ -79,7 +82,7 @@ export function useItems() {
   }, [flushUpdate, updateItemLocal]);
 
   const addItem = useCallback(async (payload) => {
-    const itemToAdd = { ...payload };
+    const itemToAdd = { all: '', ...payload }; // Ensure 'all' is always present
     if (!itemToAdd.name) {
       itemToAdd.name = generateDefaultName(items);
     }
