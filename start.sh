@@ -13,8 +13,7 @@ DEFAULT_VITE_URL="http://localhost:5173" # Fallback URL if detection fails
 
 # Function to clean up background processes on script exit
 cleanup() {
-    echo -e "
---- Shutting down services ---"
+    echo -e "\n--- Shutting down services ---"
     if [ -n "$PYTHON_PID" ]; then
         echo "Stopping Python server (PID: $PYTHON_PID)..."
         kill $PYTHON_PID || true # `|| true` prevents script from exiting if process already dead
@@ -78,20 +77,17 @@ while [ -z "$VITE_URL_FOUND" ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
 done
 
 if [ -z "$VITE_URL_FOUND" ]; then
-    echo -e "
-Error: Could not detect Vite URL after $MAX_RETRIES seconds."
+    echo -e "\nError: Could not detect Vite URL after $MAX_RETRIES seconds."
     echo "Falling back to default URL: $DEFAULT_VITE_URL"
     VITE_URL_FOUND=$DEFAULT_VITE_URL
 fi
 
 # --- Launch Browser ---
-echo -e "
---- Launching browser ---"
+echo -e "\n--- Launching browser ---"
 open "$VITE_URL_FOUND"
 
 # --- Keep script running (maintains background processes) ---
-echo -e "
---- Services are running ---"
+echo -e "\n--- Services are running ---"
 echo "Press Ctrl+C to stop both backend and frontend development servers."
 
 # Wait for Vite process to exit. If Vite is killed, the cleanup trap will fire.
