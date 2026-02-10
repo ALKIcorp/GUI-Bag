@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import ConsoleWindow from './components/ConsoleWindow.jsx';
+import AddItemModal from './components/AddItemModal.jsx'; // Import the new modal
 import { useBoot } from './hooks/useBoot.js';
 import { useResize } from './hooks/useResize.js';
 import { useItems } from './hooks/useItems.js';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('html');
+  const [showAddItemModal, setShowAddItemModal] = useState(false); // State for modal visibility
   const isBooting = useBoot(600);
   const { size, startResize } = useResize();
   const {
@@ -42,16 +44,24 @@ export default function App() {
     updateItem(selectedId, { [type]: value });
   };
 
-  const handleAddItem = async () => {
+  // Modified handleAddItem to accept a payload directly from the modal
+  const handleAddItem = async (itemName) => {
+    console.log('handleAddItem called with itemName:', itemName);
     const item = await addItem({
-      name: 'NEW_CODE',
+      name: itemName,
       type: 'UI',
       html: '',
       css: '',
       js: ''
     });
 
-    if (!item) return;
+    if (!item) {
+      console.error('Failed to add item.');
+      return;
+    }
+
+    console.log('Item added successfully:', item);
+    setShowAddItemModal(false); // Close modal on successful addition
   };
 
   const handleRemoveItem = async () => {
@@ -76,9 +86,15 @@ export default function App() {
         selectedId={selectedId}
         onSelectItem={setSelectedId}
         onUpdateCode={handleUpdateCode}
-        onAddItem={handleAddItem}
+        onAddItem={() => setShowAddItemModal(true)} // Open modal when add is clicked
         onRemoveItem={handleRemoveItem}
         onUpdateItem={updateItem}
+      />
+      {/* Render the AddItemModal */}
+      <AddItemModal
+        isOpen={showAddItemModal}
+        onClose={() => setShowAddItemModal(false)}
+        onAddItem={handleAddItem}
       />
     </div>
   );
