@@ -79,7 +79,7 @@ export default function FooterNav({ theme, themePresets, onSelectTheme, canRemov
   }, [isThemeMenuOpen]);
 
   return (
-    <div className="h-14 flex items-center px-4 justify-between border-t-2" style={{ backgroundColor: `${theme.appBg}A6`, borderTopColor: theme.stroke }}>
+    <div className="h-14 flex items-center px-4 justify-between border-t-2 relative z-50" style={{ backgroundColor: `${theme.appBg}A6`, borderTopColor: theme.stroke }}>
       <div className="flex items-center gap-1">
         <ChevronLeft size={20} style={{ color: theme.mutedText }} />
         <div className="px-4 py-1 rounded-sm border" style={{ backgroundColor: theme.editorBg, borderColor: `${theme.text}0D` }}>
