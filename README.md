@@ -1,139 +1,26 @@
 # Alki GUI Bag
 
-A separated React + Python stack with a tiny JSON database and a self-processing pending queue.
+GUI Bag is a native macOS app built with SwiftUI.
 
-This repo also includes a native macOS host app in [GUI Bag Mac.xcodeproj](/Volumes/ALKI%20SD/MACBOOK%20PRO%20STORAGE/ALKI%20Corp%20Dev/GUI%20Bag/GUI%20Bag%20Mac.xcodeproj) that embeds the React UI inside `WKWebView` and persists data with Swift in the user's local `Application Support` directory.
+## Project
 
-**What you get**
-- React client (Vite + Tailwind)
-- Python server (stdlib only)
-- `db.json` with `nextId` auto-increment
-- `pending.json` queue that auto-flushes into the DB
-- Native macOS app host (`GUI Bag Mac`) with local JSON persistence and no iCloud dependency
+- Open [GUI Bag Mac.xcodeproj](/Volumes/ALKI%20SD/MACBOOK%20PRO%20STORAGE/ALKI%20Corp%20Dev/GUI%20Bag/GUI%20Bag%20Mac.xcodeproj) in Xcode.
+- Build and run the `GUI Bag Mac` scheme.
+- App data is stored locally in the app's `Application Support` directory.
+- No web client, local server, or browser workflow is part of this project.
 
-## macOS App (Xcode)
+## Data Model
 
-The macOS target is a hybrid desktop app:
-- React still renders the UI.
-- `WKWebView` loads the built frontend from `client/dist`.
-- Swift replaces the Python API layer when running inside the macOS app.
-- Data is stored locally on the device in the app container under `Application Support`.
+The local database stores:
 
-### How it works
+- `schemaVersion`
+- `nextId`
+- `updatedAt`
+- `items`
 
-1. Open [GUI Bag Mac.xcodeproj](/Volumes/ALKI%20SD/MACBOOK%20PRO%20STORAGE/ALKI%20Corp%20Dev/GUI%20Bag/GUI%20Bag%20Mac.xcodeproj) in Xcode.
-2. Build and run the `GUI Bag Mac` scheme.
-3. The Xcode build phase runs `npm run build` in `client/`.
-4. Xcode bundles `client/dist` into the app resources.
-5. The app loads `dist/index.html` into `WKWebView`.
-6. React persistence calls are routed to Swift through a native bridge instead of `/api/items`.
-
-### Native storage behavior
-
-- Storage is local-only for now.
-- No iCloud capability is enabled.
-- The Swift host persists the same core JSON shape: `schemaVersion`, `items`, `nextId`, `updatedAt`.
-- Browser development still uses the Python server and repo-local JSON files.
-
-## Quick Start with Script (Recommended)
-
-This script automates starting both the Python backend server and the Vite frontend development server, then automatically opens the application in your browser.
-
-**Prerequisites:**
-*   Node.js and npm installed (for `npm install` and `npm run build/dev`)
-*   Python 3 installed
-
-**Steps:**
-
-1.  **Ensure client dependencies are installed and built:**
-    If you haven't already, run these commands once from the project root:
-    ```bash
-    cd client
-    npm install
-    npm run build
-    cd ..
-    ```
-2.  **Run the start script:**
-    From the project's root directory, make the script executable and run it:
-    ```bash
-    chmod +x start.sh
-    ./start.sh
-    ```
-    This will launch both servers and open your browser to `http://localhost:5173`. Press `Ctrl+C` in the terminal running the script to stop both servers.
-
-## Manual Setup (Advanced/Debugging)
-
-If you prefer to run the client and server processes separately, or for debugging purposes, follow these steps from the project's root directory:
-
-1.  **Set up the client:**
-    ```bash
-    cd client
-    npm install
-    npm run build # Or npm run dev for development server
-    cd ..
-    ```
-2.  **Start the Python server:**
-    ```bash
-    python3 server/server.py
-    ```
-    (Leave this running in a separate terminal)
-
-3.  **Start the client (if not using `npm run dev`):**
-    If you built the client (`npm run build`), the Python server at `http://localhost:4177` will serve the static files.
-
-    If you're using the Vite development server (`npm run dev`), run it in *another* separate terminal:
-    ```bash
-    cd client
-    npm run dev
-    ```
-    (The client will typically be accessible at `http://localhost:5173` and will proxy `/api` calls to the Python server running on port `4177`.)
-
-4.  **Open in browser:**
-    If using `npm run build` and `python3 server/server.py`: Go to `http://localhost:4177`
-    If using `npm run dev`: Go to the URL provided by Vite (typically `http://localhost:5173`)
-
-## Data Files
-- `server/data/db.json`
-  - Holds `schemaVersion`, `items`, `nextId`, and `updatedAt`
-- `server/data/pending.json`
-  - New items are queued here
-  - A background thread in the Python server flushes them into the DB
-
-## API Contract (local for now)
-Base: `/api`
-
-`GET /api/items`
-- Response: `{ schemaVersion, items, updatedAt }`
-
-`POST /api/items`
-- Body: `{ name, type, html, css, js }`
-- Response: `{ item }`
-- Behavior: creates an item in `pending.json`, which auto-flushes into `db.json`
-
-`PUT /api/items/:id`
-- Body: any subset of `{ name, type, html, css, js }`
-- Response: `{ item }`
-- Behavior: updates the item in `db.json` immediately
-
-`DELETE /api/items/:id`
-- Response: `204 No Content`
-- Behavior: removes the item from `db.json`
-
-## Schema Versioning
-`db.json` includes `schemaVersion` to support lightweight upgrades before we introduce real web requests.
-
-Current schema: `1`
-- `schemaVersion`: number
-- `nextId`: number
-- `updatedAt`: ISO8601 UTC string
-- `items`: array of items
-
-Future upgrade path (planned)
-1. Add `migrations` and apply transformations in `server/server.py` when `schemaVersion` is lower than current.
-2. Keep migrations idempotent and fast since this is local JSON.
-3. Bump `SCHEMA_VERSION` and update `db.json` defaults in one place.
+Each item contains saved UI code and metadata used by the macOS app.
 
 ## Notes
-- Additions are persisted via `/api/items`.
-- Code edits are currently local-only and not persisted yet (by design for now).
-- In the macOS app, CRUD persistence is handled natively by Swift rather than the Python server.
+
+- Backups are exported and imported as JSON from the macOS app.
+- Persistence is handled entirely in Swift.

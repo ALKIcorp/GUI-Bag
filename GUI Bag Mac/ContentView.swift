@@ -292,7 +292,7 @@ private struct PreviewWorkspace: View {
                     )
                 }
             } else {
-                PreviewBrowserCard(
+                PreviewCanvasCard(
                     item: model.activePreviewItem ?? model.items[0],
                     theme: theme,
                     zoomScale: model.previewZoom,
@@ -371,7 +371,7 @@ private struct PreviewToolbar: View {
     }
 }
 
-private struct PreviewBrowserCard: View {
+private struct PreviewCanvasCard: View {
     let item: StoredItem
     let theme: ConsoleThemePreset
     let zoomScale: CGFloat
@@ -379,7 +379,7 @@ private struct PreviewBrowserCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            BrowserChrome(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
+            PreviewChrome(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -401,7 +401,7 @@ private struct PreviewBrowserCard: View {
     }
 }
 
-private struct BrowserChrome: View {
+private struct PreviewChrome: View {
     let theme: ConsoleThemePreset
     let item: StoredItem
     let isActive: Bool
@@ -421,7 +421,7 @@ private struct BrowserChrome: View {
                     .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
 
-                Text("localhost/live-preview • \(Int(zoomScale * 100))%")
+                Text("Live Preview • \(Int(zoomScale * 100))%")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundStyle(theme.textSecondary)
                     .lineLimit(1)

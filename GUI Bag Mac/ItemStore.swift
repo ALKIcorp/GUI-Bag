@@ -36,15 +36,6 @@ struct CreateItemPayload: Decodable {
     var all: String?
 }
 
-struct UpdateItemPayload: Decodable {
-    var id: String
-    var patch: [String: String]
-}
-
-struct DeleteItemPayload: Decodable {
-    var id: String
-}
-
 enum ItemStoreError: Error, LocalizedError {
     case invalidPayload
     case itemNotFound
@@ -86,22 +77,8 @@ final class ItemStore {
         try ensureDatabaseExists()
     }
 
-    func listItemsResponse() throws -> [String: Any] {
-        let db = try loadDatabase()
-        return [
-            "schemaVersion": db.schemaVersion,
-            "items": try encodeItems(db.items),
-            "updatedAt": db.updatedAt
-        ]
-    }
-
     func loadItems() throws -> [StoredItem] {
         try loadDatabase().items
-    }
-
-    func createItem(payload: CreateItemPayload) throws -> [String: Any] {
-        let item = try createStoredItem(payload: payload)
-        return ["item": try encodeItem(item)]
     }
 
     func createStoredItem(payload: CreateItemPayload) throws -> StoredItem {
@@ -125,11 +102,6 @@ final class ItemStore {
         try saveDatabase(db)
 
         return item
-    }
-
-    func updateItem(payload: UpdateItemPayload) throws -> [String: Any] {
-        let item = try updateStoredItem(id: payload.id, patch: payload.patch)
-        return ["item": try encodeItem(item)]
     }
 
     func updateStoredItem(id: String, patch: [String: String]) throws -> StoredItem {
@@ -170,11 +142,6 @@ final class ItemStore {
         try saveDatabase(db)
 
         return item
-    }
-
-    func deleteItem(payload: DeleteItemPayload) throws -> [String: Any] {
-        try deleteStoredItem(id: payload.id)
-        return ["success": true]
     }
 
     func deleteStoredItem(id: String) throws {
@@ -347,17 +314,6 @@ final class ItemStore {
             ]
         )
     }
-
-    private func encodeItem(_ item: StoredItem) throws -> [String: Any] {
-        let data = try JSONEncoder().encode(item)
-        return (try JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-    }
-
-    private func encodeItems(_ items: [StoredItem]) throws -> [[String: Any]] {
-        let data = try JSONEncoder().encode(items)
-        return (try JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
-    }
-
     private static func utcNow() -> String {
         ISO8601DateFormatter().string(from: Date())
     }

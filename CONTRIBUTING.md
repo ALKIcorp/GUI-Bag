@@ -4,27 +4,20 @@ Thanks for helping improve Alki GUI Bag.
 
 ## Basics
 - Keep changes focused and small when possible.
-- Prefer plain JavaScript and stdlib Python for the server.
+- Preserve the native macOS app architecture.
 - Avoid adding heavy dependencies unless there is a clear need.
 
 ## Local Dev
 ```bash
-cd client
-npm install
-npm run dev
-```
-
-```bash
-cd ..
-python3 server/server.py
+open "GUI Bag Mac.xcodeproj"
 ```
 
 ## Code Style
-- React: functional components + hooks.
-- Python: keep it simple, stdlib only.
-- Files: group by concern (components, hooks, data).
+- SwiftUI: prefer small focused views and clear data flow.
+- Swift: keep persistence and model changes straightforward.
+- Files: group by concern.
 
 ## Pull Requests
 - Describe what changed and why.
 - Include screenshots for UI changes when possible.
-- If you touch the API contract, update `README.md`.
+- If you change app behavior or persistence, update `README.md`.
