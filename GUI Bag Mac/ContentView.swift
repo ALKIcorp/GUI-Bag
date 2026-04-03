@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -8,7 +9,7 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                ConsoleTheme.outerBackground
+                WindowBackgroundGlass()
                     .ignoresSafeArea()
 
                 ConsoleWindow(
@@ -42,12 +43,12 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 1100, minHeight: 760)
+        .background(WindowTransparencyConfigurator())
         .animation(.easeInOut(duration: 0.18), value: isShowingAddModal)
     }
 }
 
 private enum ConsoleTheme {
-    static let outerBackground = Color(red: 0.02, green: 0.02, blue: 0.02)
     static let shell = Color(red: 0.08, green: 0.08, blue: 0.08)
     static let topRed = Color(red: 0.49, green: 0.10, blue: 0.16)
     static let bottomRed = Color(red: 0.66, green: 0.11, blue: 0.23)
@@ -62,6 +63,48 @@ private enum ConsoleTheme {
     static let success = Color(red: 0.15, green: 0.67, blue: 0.33)
     static let danger = Color(red: 0.86, green: 0.17, blue: 0.24)
     static let blue = Color(red: 0.16, green: 0.42, blue: 0.92)
+}
+
+private struct WindowBackgroundGlass: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.blendingMode = .behindWindow
+        view.material = .underWindowBackground
+        view.state = .active
+        view.isEmphasized = false
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = .underWindowBackground
+        nsView.state = .active
+    }
+}
+
+private struct WindowTransparencyConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            configureWindow(for: view)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            configureWindow(for: nsView)
+        }
+    }
+
+    private func configureWindow(for view: NSView) {
+        guard let window = view.window else { return }
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.titlebarAppearsTransparent = true
+        window.hasShadow = true
+        window.contentView?.wantsLayer = true
+        window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+    }
 }
 
 private struct ConsoleWindow: View {
