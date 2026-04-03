@@ -3,6 +3,9 @@ import ItemList from './ItemList.jsx';
 import FooterNav from './FooterNav.jsx';
 
 export default function BottomPanel({
+  theme,
+  themePresets,
+  onSelectTheme,
   activeTab,
   onChangeTab,
   currentItem,
@@ -15,9 +18,13 @@ export default function BottomPanel({
   onUpdateItem
 }) {
   return (
-    <div className="flex-[5] bg-[#a91d3a] border-[8px] border-[#151515] rounded-b-[2rem] relative overflow-hidden flex flex-col">
+    <div
+      className="flex-[5] border-[8px] rounded-b-[2rem] relative overflow-hidden flex flex-col"
+      style={{ backgroundColor: theme.panel, borderColor: theme.stroke }}
+    >
       <div className="flex flex-1 overflow-hidden">
         <CodeEditor
+          theme={theme}
           activeTab={activeTab}
           onChangeTab={onChangeTab}
           value={currentItem?.[activeTab]}
@@ -26,10 +33,17 @@ export default function BottomPanel({
           onChangeCode={onUpdateCode}
         />
 
-        <ItemList items={items} selectedId={selectedId} onSelect={onSelectItem} onUpdateItem={onUpdateItem} />
+        <ItemList theme={theme} items={items} selectedId={selectedId} onSelect={onSelectItem} onUpdateItem={onUpdateItem} />
       </div>
 
-      <FooterNav canRemove={items.length > 1} onAdd={onAddItem} onRemove={onRemoveItem} />
+      <FooterNav
+        theme={theme}
+        themePresets={themePresets}
+        onSelectTheme={onSelectTheme}
+        canRemove={items.length > 1}
+        onAdd={onAddItem}
+        onRemove={onRemoveItem}
+      />
     </div>
   );
 }

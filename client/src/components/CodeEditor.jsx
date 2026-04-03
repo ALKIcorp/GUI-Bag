@@ -29,10 +29,11 @@ const ALL_SECTIONS = [
   }
 ];
 
-function SingleEditor({ activeTab, value, onChange }) {
+function SingleEditor({ activeTab, value, onChange, theme }) {
   return (
     <textarea
-      className="flex-1 bg-transparent p-3 font-mono text-[10px] outline-none resize-none text-pink-400 placeholder-pink-950 custom-scroll leading-relaxed"
+      className="flex-1 bg-transparent p-3 font-mono text-[10px] outline-none resize-none custom-scroll leading-relaxed"
+      style={{ color: theme.accent2 }}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value)}
       spellCheck="false"
@@ -41,7 +42,7 @@ function SingleEditor({ activeTab, value, onChange }) {
   );
 }
 
-function AllSectionsEditor({ currentItem, onChangeCode }) {
+function AllSectionsEditor({ currentItem, onChangeCode, theme }) {
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const toggleSection = (sectionId) => {
@@ -61,27 +62,30 @@ function AllSectionsEditor({ currentItem, onChangeCode }) {
         return (
           <section
             key={section.id}
-            className="rounded-xl border border-white/10 bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden"
+            className="rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden"
+            style={{ borderColor: `${theme.text}1A`, backgroundColor: theme.appBg }}
           >
             <button
               type="button"
               onClick={() => toggleSection(section.id)}
-              className="w-full px-3 py-2 bg-[#1a1a1a] border-b border-black/70 flex items-center justify-between text-left"
+              className="w-full px-3 py-2 border-b flex items-center justify-between text-left"
+              style={{ backgroundColor: theme.panel2, borderBottomColor: `${theme.appBg}B3` }}
             >
               <span className="flex items-center gap-2">
-                <ToggleIcon size={12} className="text-white/70" />
-                <span className={`text-[9px] font-black tracking-[0.25em] uppercase ${section.accent}`}>
+                <ToggleIcon size={12} style={{ color: theme.mutedText }} />
+                <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: section.id === 'html' ? theme.accent2 : section.id === 'css' ? theme.accent : theme.text }}>
                   {section.label}
                 </span>
               </span>
-              <span className="text-[8px] font-bold uppercase text-white/35">
+              <span className="text-[8px] font-bold uppercase" style={{ color: `${theme.text}59` }}>
                 {isCollapsed ? 'Expand' : 'Minimize'}
               </span>
             </button>
 
             {!isCollapsed ? (
               <textarea
-                className={`w-full min-h-[140px] bg-transparent p-3 font-mono text-[10px] outline-none resize-y ${section.accent} placeholder:text-white/15 custom-scroll leading-relaxed`}
+                className="w-full min-h-[140px] bg-transparent p-3 font-mono text-[10px] outline-none resize-y custom-scroll leading-relaxed"
+                style={{ color: section.id === 'html' ? theme.accent2 : section.id === 'css' ? theme.accent : theme.text }}
                 value={value}
                 onChange={(e) => onChangeCode(section.id, e.target.value)}
                 spellCheck="false"
@@ -95,7 +99,7 @@ function AllSectionsEditor({ currentItem, onChangeCode }) {
   );
 }
 
-export default function CodeEditor({ activeTab, onChangeTab, value, onChange, currentItem, onChangeCode }) {
+export default function CodeEditor({ theme, activeTab, onChangeTab, value, onChange, currentItem, onChangeCode }) {
   return (
     <div className="w-[58%] p-3 flex flex-col gap-3">
       <div className="flex justify-center gap-2">
@@ -103,23 +107,44 @@ export default function CodeEditor({ activeTab, onChangeTab, value, onChange, cu
           <button
             key={id}
             onClick={() => onChangeTab(id)}
-            className={`flex flex-col items-center justify-center w-11 h-11 rounded-xl border-2 transition-all shadow-lg
-              ${activeTab === id ? 'bg-white text-[#a91d3a] border-white scale-105' : 'bg-[#7d1a2a]/40 text-white border-white/10 hover:bg-[#7d1a2a]/60'}`}
+            className="flex flex-col items-center justify-center w-11 h-11 rounded-xl border-2 transition-all shadow-lg"
+            style={
+              activeTab === id
+                ? {
+                    backgroundColor: theme.accent,
+                    color: theme.panel,
+                    borderColor: theme.accent,
+                    transform: 'scale(1.05)'
+                  }
+                : {
+                    backgroundColor: `${theme.panel2}A6`,
+                    color: theme.text,
+                    borderColor: `${theme.text}1A`
+                  }
+            }
           >
             <Icon size={18} />
-            <span className="text-[6px] font-black mt-0.5 uppercase">{label}</span> {/* Use label */}
+            <span className="text-[6px] font-black mt-0.5 uppercase">{label}</span>
           </button>
         ))}
       </div>
 
-      <div className="flex-1 bg-[#0a0a0a] rounded-xl border-4 border-[#151515] flex flex-col shadow-inner overflow-hidden">
-        <div className="px-3 py-1 bg-[#1a1a1a] border-b-2 border-[#000] flex justify-between items-center">
-          <span className="text-[8px] font-black italic tracking-widest text-pink-500/80">{activeTab}.alki</span>
+      <div
+        className="flex-1 rounded-xl border-4 flex flex-col shadow-inner overflow-hidden"
+        style={{ backgroundColor: theme.editorBg, borderColor: theme.stroke }}
+      >
+        <div
+          className="px-3 py-1 border-b-2 flex justify-between items-center"
+          style={{ backgroundColor: theme.panel2, borderBottomColor: theme.appBg }}
+        >
+          <span className="text-[8px] font-black italic tracking-widest" style={{ color: theme.accent2 }}>
+            {activeTab}.alki
+          </span>
         </div>
         {activeTab === 'all' ? (
-          <AllSectionsEditor currentItem={currentItem} onChangeCode={onChangeCode} />
+          <AllSectionsEditor currentItem={currentItem} onChangeCode={onChangeCode} theme={theme} />
         ) : (
-          <SingleEditor activeTab={activeTab} value={value} onChange={onChange} />
+          <SingleEditor activeTab={activeTab} value={value} onChange={onChange} theme={theme} />
         )}
       </div>
     </div>

@@ -7,6 +7,9 @@ export default function ConsoleWindow({
   onResizeStart,
   isBooting,
   srcDoc,
+  theme,
+  themePresets,
+  onSelectTheme,
   activeTab,
   onChangeTab,
   currentItem,
@@ -20,17 +23,26 @@ export default function ConsoleWindow({
 }) {
   return (
     <div
-      style={{ width: `${size.width}px`, height: `${size.height}px` }}
-      className="flex flex-col relative select-none bg-[#151515] rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] border-[1px] border-white/5 p-2"
+      className="flex flex-col relative select-none rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] border-[1px] p-2"
+      style={{
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        backgroundColor: theme.editorBg,
+        borderColor: `${theme.text}14`,
+        color: theme.text
+      }}
     >
-      <TopPanel isBooting={isBooting} srcDoc={srcDoc} />
+      <TopPanel isBooting={isBooting} srcDoc={srcDoc} theme={theme} />
 
-      <div className="h-6 bg-[#151515] flex justify-between items-center px-16 relative z-30">
-        <div className="w-14 h-1.5 bg-[#0a0a0a] rounded-full shadow-inner"></div>
-        <div className="w-14 h-1.5 bg-[#0a0a0a] rounded-full shadow-inner"></div>
+      <div className="h-6 flex justify-between items-center px-16 relative z-30" style={{ backgroundColor: theme.editorBg }}>
+        <div className="w-14 h-1.5 rounded-full shadow-inner" style={{ backgroundColor: theme.appBg }}></div>
+        <div className="w-14 h-1.5 rounded-full shadow-inner" style={{ backgroundColor: theme.appBg }}></div>
       </div>
 
       <BottomPanel
+        theme={theme}
+        themePresets={themePresets}
+        onSelectTheme={onSelectTheme}
         activeTab={activeTab}
         onChangeTab={onChangeTab}
         currentItem={currentItem}
