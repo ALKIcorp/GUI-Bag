@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var model = AppModel()
@@ -186,7 +187,7 @@ private struct ConsoleWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PreviewSection(item: model.currentItem, theme: theme)
+            PreviewSection(model: model, theme: theme, onAdd: onAdd)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: .infinity)
 
@@ -208,8 +209,10 @@ private struct ConsoleWindow: View {
 }
 
 private struct PreviewSection: View {
-    let item: StoredItem?
+    @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
+    let onAdd: () -> Void
+    @State private var isShowingExpandedPreview = false
 
     var body: some View {
         ZStack {
@@ -218,7 +221,13 @@ private struct PreviewSection: View {
             DotPatternOverlay()
                 .opacity(0.10)
 
-            PreviewFrame(item: item, theme: theme)
+            PreviewWorkspace(
+                model: model,
+                theme: theme,
+                onAdd: onAdd,
+                showsExpandControl: true,
+                onExpand: { isShowingExpandedPreview = true }
+            )
                 .padding(24)
         }
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
@@ -226,6 +235,9 @@ private struct PreviewSection: View {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
         )
+        .sheet(isPresented: $isShowingExpandedPreview) {
+            ExpandedPreviewSheet(model: model, theme: theme)
+        }
     }
 }
 
@@ -249,31 +261,48 @@ private struct DotPatternOverlay: View {
     }
 }
 
-private struct PreviewFrame: View {
-    let item: StoredItem?
+private struct PreviewWorkspace: View {
+    @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
+    let onAdd: () -> Void
+    let showsExpandControl: Bool
+    let onExpand: () -> Void
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(theme.previewBg)
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(theme.stroke, lineWidth: 4)
+        VStack(spacing: 18) {
+            PreviewToolbar(
+                model: model,
+                theme: theme,
+                onAdd: onAdd,
+                showsExpandControl: showsExpandControl,
+                onExpand: onExpand
+            )
 
-            if let item {
-                PreviewWebView(html: makePreviewHTML(for: item, theme: theme))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            if model.items.isEmpty {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(theme.previewBg)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(theme.stroke, lineWidth: 4)
+
+                    ConsoleEmptyState(
+                        theme: theme,
+                        title: "LINK OFFLINE",
+                        message: "Add an item to render the preview frame."
+                    )
+                }
             } else {
-                ConsoleEmptyState(
+                PreviewBrowserCard(
+                    item: model.activePreviewItem ?? model.items[0],
                     theme: theme,
-                    title: "LINK OFFLINE",
-                    message: "Add an item to render the preview frame."
+                    zoomScale: model.previewZoom,
+                    isActive: true
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 14)
     }
-
 }
 
 private func makePreviewHTML(for item: StoredItem, theme: ConsoleThemePreset) -> String {
@@ -307,6 +336,283 @@ private func makePreviewHTML(for item: StoredItem, theme: ConsoleThemePreset) ->
       </body>
     </html>
     """
+}
+
+private struct PreviewToolbar: View {
+    @ObservedObject var model: AppModel
+    let theme: ConsoleThemePreset
+    let onAdd: () -> Void
+    let showsExpandControl: Bool
+    let onExpand: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 16) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(model.items) { item in
+                        PreviewTabButton(
+                            item: item,
+                            theme: theme,
+                            isSelected: model.activePreviewID == item.id
+                        ) {
+                            model.selectPreview(id: item.id)
+                        }
+                    }
+
+                    PreviewAddTabButton(theme: theme, action: onAdd)
+                }
+                .padding(.vertical, 2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            PreviewControlCluster(theme: theme, model: model, showsExpandControl: showsExpandControl, onExpand: onExpand)
+                .fixedSize()
+        }
+    }
+}
+
+private struct PreviewBrowserCard: View {
+    let item: StoredItem
+    let theme: ConsoleThemePreset
+    let zoomScale: CGFloat
+    let isActive: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            BrowserChrome(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(theme.previewBg)
+
+                PreviewWebView(html: makePreviewHTML(for: item, theme: theme), zoomScale: zoomScale)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(8)
+            }
+            .padding(10)
+        }
+        .background(theme.editorBg.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(isActive ? theme.accent2.opacity(0.75) : theme.stroke, lineWidth: isActive ? 3 : 2)
+        )
+        .shadow(color: .black.opacity(isActive ? 0.24 : 0.16), radius: isActive ? 18 : 10, x: 0, y: 12)
+    }
+}
+
+private struct BrowserChrome: View {
+    let theme: ConsoleThemePreset
+    let item: StoredItem
+    let isActive: Bool
+    let zoomScale: CGFloat
+
+    var body: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                Circle().fill(Color.red.opacity(0.9)).frame(width: 10, height: 10)
+                Circle().fill(Color.yellow.opacity(0.9)).frame(width: 10, height: 10)
+                Circle().fill(Color.green.opacity(0.9)).frame(width: 10, height: 10)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(theme.textPrimary)
+                    .lineLimit(1)
+
+                Text("localhost/live-preview • \(Int(zoomScale * 100))%")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundStyle(theme.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            if isActive {
+                Image(systemName: "sparkles.tv")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(theme.accent2)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(theme.panel2.opacity(0.96))
+    }
+}
+
+private struct PreviewControlCluster: View {
+    let theme: ConsoleThemePreset
+    @ObservedObject var model: AppModel
+    let showsExpandControl: Bool
+    let onExpand: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            PreviewPill(theme: theme) {
+                HStack(spacing: 8) {
+                    Button(action: model.zoomOut) {
+                        Image(systemName: "minus.magnifyingglass")
+                    }
+                    .buttonStyle(.plain)
+
+                    Menu {
+                        ForEach(PreviewZoomPreset.allCases) { preset in
+                            Button(preset.title) {
+                                model.previewZoom = preset.scale
+                            }
+                        }
+                    } label: {
+                        Text("\(Int(model.previewZoom * 100))%")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .frame(minWidth: 42)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+
+                    Button(action: model.zoomIn) {
+                        Image(systemName: "plus.magnifyingglass")
+                    }
+                    .buttonStyle(.plain)
+                }
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.textPrimary)
+            }
+
+            if showsExpandControl {
+                PreviewPill(theme: theme) {
+                    Button(action: onExpand) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
+                            .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+}
+
+private struct PreviewAddTabButton: View {
+    let theme: ConsoleThemePreset
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            PreviewPill(theme: theme, prominence: 0.14) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(theme.textSecondary)
+                    .frame(width: 30, height: 30)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PreviewTabButton: View {
+    let item: StoredItem
+    let theme: ConsoleThemePreset
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            PreviewPill(theme: theme, prominence: isSelected ? 0.30 : 0.16) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isSelected ? theme.accent2 : theme.textSecondary.opacity(0.75))
+                        .frame(width: 7, height: 7)
+
+                    Text(item.name)
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9, weight: .black))
+                    }
+                }
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PreviewPill<Content: View>: View {
+    let theme: ConsoleThemePreset
+    var prominence: Double = 0.18
+    let content: Content
+
+    init(theme: ConsoleThemePreset, prominence: Double = 0.18, @ViewBuilder content: () -> Content) {
+        self.theme = theme
+        self.prominence = prominence
+        self.content = content()
+    }
+
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            content
+                .padding(.horizontal, 2)
+                .glassEffect(
+                    .regular
+                        .tint(theme.accent.opacity(prominence))
+                        .interactive(),
+                    in: .capsule
+                )
+        } else {
+            content
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(theme.text.opacity(0.10), lineWidth: 1)
+                )
+        }
+    }
+}
+
+private struct ExpandedPreviewSheet: View {
+    @ObservedObject var model: AppModel
+    let theme: ConsoleThemePreset
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            WindowBackgroundGlass(theme: theme)
+                .ignoresSafeArea()
+
+            LinearGradient(
+                colors: [theme.appBg.opacity(0.96), theme.panel2.opacity(0.82)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                HStack {
+                    Text("EXPANDED LIVE PREVIEW")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .tracking(1.6)
+                        .foregroundStyle(theme.textPrimary)
+
+                    Spacer()
+
+                    Button("Close") {
+                        dismiss()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                PreviewWorkspace(model: model, theme: theme, onAdd: {}, showsExpandControl: false, onExpand: {})
+            }
+            .padding(24)
+        }
+        .frame(minWidth: 1200, minHeight: 760)
+    }
 }
 
 private struct HandleDivider: View {
@@ -363,7 +669,9 @@ private struct BottomSection: View {
                 onThemeSelected: onThemeSelected,
                 canRemove: model.items.count > 1 && model.currentItem != nil,
                 onAdd: onAdd,
-                onRemove: model.deleteSelectedItem
+                onRemove: model.deleteSelectedItem,
+                onExportBackup: model.exportBackup,
+                onImportBackup: model.importBackup
             )
         }
         .background(theme.bottomRed)
@@ -779,6 +1087,8 @@ private struct FooterBar: View {
     let canRemove: Bool
     let onAdd: () -> Void
     let onRemove: () -> Void
+    let onExportBackup: () -> Void
+    let onImportBackup: () -> Void
     @State private var isShowingSettings = false
 
     var body: some View {
@@ -848,7 +1158,18 @@ private struct FooterBar: View {
                 .buttonStyle(.plain)
                 .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
                 .popover(isPresented: $isShowingSettings, arrowEdge: .bottom) {
-                    ThemeSettingsPopover(theme: theme, onThemeSelected: onThemeSelected)
+                    ThemeSettingsPopover(
+                        theme: theme,
+                        onThemeSelected: onThemeSelected,
+                        onExportBackup: {
+                            isShowingSettings = false
+                            onExportBackup()
+                        },
+                        onImportBackup: {
+                            isShowingSettings = false
+                            onImportBackup()
+                        }
+                    )
                 }
             }
         }
@@ -866,6 +1187,8 @@ private struct FooterBar: View {
 private struct ThemeSettingsPopover: View {
     let theme: ConsoleThemePreset
     let onThemeSelected: (ConsoleThemePreset) -> Void
+    let onExportBackup: () -> Void
+    let onImportBackup: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -916,6 +1239,31 @@ private struct ThemeSettingsPopover: View {
                 }
             }
             .frame(width: 320, height: 360)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BACKUPS")
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .tracking(1.8)
+                    .foregroundStyle(theme.textPrimary)
+
+                HStack(spacing: 8) {
+                    BackupActionButton(
+                        title: "SAVE BACKUP",
+                        systemImage: "square.and.arrow.down",
+                        color: theme.success,
+                        textColor: theme.editorBg,
+                        action: onExportBackup
+                    )
+
+                    BackupActionButton(
+                        title: "LOAD BACKUP",
+                        systemImage: "square.and.arrow.up",
+                        color: theme.accent2,
+                        textColor: theme.previewBg,
+                        action: onImportBackup
+                    )
+                }
+            }
         }
         .padding(14)
         .background(theme.editorBg)
@@ -957,6 +1305,33 @@ private struct FooterActionButton: View {
         }
         .buttonStyle(.plain)
         .opacity(1)
+    }
+}
+
+private struct BackupActionButton: View {
+    let title: String
+    let systemImage: String
+    let color: Color
+    let textColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .black))
+
+                Text(title)
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+                    .tracking(1.1)
+            }
+            .foregroundStyle(textColor)
+            .frame(maxWidth: .infinity)
+            .frame(height: 34)
+            .background(color)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -1154,17 +1529,56 @@ enum EditorTab: String, CaseIterable, Identifiable {
     }
 }
 
+enum PreviewZoomPreset: CGFloat, CaseIterable, Identifiable {
+    case fifty = 0.5
+    case seventyFive = 0.75
+    case oneHundred = 1.0
+    case oneTwentyFive = 1.25
+    case oneFifty = 1.5
+    case twoHundred = 2.0
+
+    var id: CGFloat { rawValue }
+
+    var scale: CGFloat { rawValue }
+
+    var title: String {
+        "\(Int(rawValue * 100))%"
+    }
+}
+
 final class AppModel: ObservableObject {
     @Published var items: [StoredItem] = []
-    @Published var selectedID: String?
+    @Published var selectedID: String? {
+        didSet {
+            guard selectedID != oldValue, activePreviewID != selectedID else { return }
+            activePreviewID = selectedID
+        }
+    }
     @Published var activeTab: EditorTab = .html
+    @Published var activePreviewID: String? {
+        didSet {
+            guard activePreviewID != oldValue, selectedID != activePreviewID else { return }
+            selectedID = activePreviewID
+        }
+    }
+    @Published var previewZoom: CGFloat = PreviewZoomPreset.oneHundred.scale
     @Published var statusText = "Ready"
 
     private let store: ItemStore
-    private var pendingSaveWorkItem: DispatchWorkItem?
+    private var pendingSave: PendingSave?
+
+    private struct PendingSave {
+        let id: String
+        let patch: [String: String]
+        let workItem: DispatchWorkItem
+    }
 
     var currentItem: StoredItem? {
         items.first(where: { $0.id == selectedID }) ?? items.first
+    }
+
+    var activePreviewItem: StoredItem? {
+        items.first(where: { $0.id == activePreviewID }) ?? currentItem
     }
 
     init() {
@@ -1209,6 +1623,7 @@ final class AppModel: ObservableObject {
             )
             items.append(item)
             selectedID = item.id
+            activePreviewID = item.id
             statusText = "Added \(item.name)"
         } catch {
             statusText = error.localizedDescription
@@ -1222,6 +1637,7 @@ final class AppModel: ObservableObject {
             try store.deleteStoredItem(id: id)
             items.removeAll { $0.id == id }
             selectedID = items.first?.id
+            activePreviewID = selectedID
             statusText = "Deleted item"
         } catch {
             statusText = error.localizedDescription
@@ -1240,6 +1656,54 @@ final class AppModel: ObservableObject {
 
     func updateSelectedType(_ value: String) {
         updateSelectedField("type", value: value)
+    }
+
+    func exportBackup() {
+        flushPendingSave()
+
+        let savePanel = NSSavePanel()
+        savePanel.title = "Save GUI Bag Backup"
+        savePanel.message = "Choose where to save a backup of your saved UI components."
+        savePanel.nameFieldStringValue = backupFileName()
+        savePanel.allowedContentTypes = [.json]
+        savePanel.canCreateDirectories = true
+        savePanel.isExtensionHidden = false
+
+        guard savePanel.runModal() == .OK, let url = savePanel.url else {
+            return
+        }
+
+        do {
+            try store.exportBackup(to: url)
+            statusText = "Backup saved"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    func importBackup() {
+        flushPendingSave()
+
+        let openPanel = NSOpenPanel()
+        openPanel.title = "Load GUI Bag Backup"
+        openPanel.message = "Choose a backup file to import saved UI components."
+        openPanel.allowedContentTypes = [.json]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+
+        guard openPanel.runModal() == .OK, let url = openPanel.url else {
+            return
+        }
+
+        do {
+            let importedItems = try store.importBackup(from: url)
+            items = try store.loadItems()
+            selectedID = importedItems.last?.id ?? items.first?.id
+            activePreviewID = selectedID
+            statusText = importedItems.isEmpty ? "Backup loaded" : "Imported \(importedItems.count) items"
+        } catch {
+            statusText = error.localizedDescription
+        }
     }
 
     private func updateCurrentCode(tab: EditorTab, value: String) {
@@ -1283,34 +1747,73 @@ final class AppModel: ObservableObject {
     }
 
     private func scheduleSave(id: String, patch: [String: String]) {
-        pendingSaveWorkItem?.cancel()
+        pendingSave?.workItem.cancel()
         statusText = "Saving..."
 
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-
-            do {
-                let item = try self.store.updateStoredItem(id: id, patch: patch)
-                if let index = self.items.firstIndex(where: { $0.id == id }) {
-                    self.items[index] = item
-                }
-                self.statusText = "Saved"
-            } catch {
-                self.statusText = error.localizedDescription
-            }
+            self?.persistPendingSave(id: id, patch: patch)
         }
 
-        pendingSaveWorkItem = workItem
+        pendingSave = PendingSave(id: id, patch: patch, workItem: workItem)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: workItem)
+    }
+
+    private func persistPendingSave(id: String, patch: [String: String]) {
+        if pendingSave?.id == id, pendingSave?.patch == patch {
+            pendingSave = nil
+        }
+
+        do {
+            let item = try store.updateStoredItem(id: id, patch: patch)
+            if let index = items.firstIndex(where: { $0.id == id }) {
+                items[index] = item
+            }
+            statusText = "Saved"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    private func flushPendingSave() {
+        guard let pendingSave else { return }
+        pendingSave.workItem.cancel()
+        self.pendingSave = nil
+        persistPendingSave(id: pendingSave.id, patch: pendingSave.patch)
     }
 
     private func reload() {
         do {
             items = try store.loadItems()
             selectedID = items.first?.id
+            activePreviewID = selectedID
         } catch {
             statusText = error.localizedDescription
         }
+    }
+
+    func selectPreview(id: String) {
+        guard items.contains(where: { $0.id == id }) else { return }
+        activePreviewID = id
+    }
+
+    func zoomIn() {
+        setZoom(nextZoom(increasing: true))
+    }
+
+    func zoomOut() {
+        setZoom(nextZoom(increasing: false))
+    }
+
+    private func setZoom(_ scale: CGFloat) {
+        previewZoom = min(max(scale, PreviewZoomPreset.allCases.first?.scale ?? 0.5), PreviewZoomPreset.allCases.last?.scale ?? 2.0)
+    }
+
+    private func nextZoom(increasing: Bool) -> CGFloat {
+        let presets = PreviewZoomPreset.allCases.map(\.scale)
+        if increasing {
+            return presets.first(where: { $0 > previewZoom + 0.001 }) ?? previewZoom
+        }
+        return presets.last(where: { $0 < previewZoom - 0.001 }) ?? previewZoom
     }
 
     func nextDefaultName() -> String {
@@ -1325,5 +1828,11 @@ final class AppModel: ObservableObject {
     private func resolvedItemName(from name: String?) -> String {
         let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nextDefaultName() : trimmed
+    }
+
+    private func backupFileName() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        return "GUI-Bag-Backup-\(formatter.string(from: Date())).json"
     }
 }

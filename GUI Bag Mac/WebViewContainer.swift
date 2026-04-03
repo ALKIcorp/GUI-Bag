@@ -3,6 +3,7 @@ import WebKit
 
 struct PreviewWebView: NSViewRepresentable {
     let html: String
+    let zoomScale: CGFloat
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -19,6 +20,8 @@ struct PreviewWebView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        context.coordinator.zoomScale = zoomScale
+        webView.setMagnification(zoomScale, centeredAt: .zero)
         guard context.coordinator.lastHTML != html else { return }
         context.coordinator.lastHTML = html
         webView.loadHTMLString(html, baseURL: nil)
@@ -26,6 +29,7 @@ struct PreviewWebView: NSViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var lastHTML = ""
+        var zoomScale: CGFloat = 1
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             NSLog("Preview navigation failed: %@", error.localizedDescription)
@@ -33,6 +37,10 @@ struct PreviewWebView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             NSLog("Preview provisional navigation failed: %@", error.localizedDescription)
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            webView.setMagnification(zoomScale, centeredAt: .zero)
         }
     }
 }

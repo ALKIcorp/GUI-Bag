@@ -21,6 +21,12 @@ struct ItemDatabase: Codable {
     var items: [StoredItem]
 }
 
+struct ItemBackup: Codable {
+    var schemaVersion: Int
+    var exportedAt: String
+    var items: [StoredItem]
+}
+
 struct CreateItemPayload: Decodable {
     var name: String?
     var type: String?
@@ -42,6 +48,7 @@ struct DeleteItemPayload: Decodable {
 enum ItemStoreError: Error, LocalizedError {
     case invalidPayload
     case itemNotFound
+    case invalidBackup
 
     var errorDescription: String? {
         switch self {
@@ -49,6 +56,8 @@ enum ItemStoreError: Error, LocalizedError {
             return "Invalid payload"
         case .itemNotFound:
             return "Item not found"
+        case .invalidBackup:
+            return "Backup file is invalid"
         }
     }
 }
@@ -181,6 +190,46 @@ final class ItemStore {
         try saveDatabase(db)
     }
 
+    func exportBackup(to url: URL) throws {
+        let db = try loadDatabase()
+        let backup = ItemBackup(
+            schemaVersion: db.schemaVersion,
+            exportedAt: Self.utcNow(),
+            items: db.items
+        )
+        let data = try encoder.encode(backup)
+        try data.write(to: url, options: .atomic)
+    }
+
+    func importBackup(from url: URL) throws -> [StoredItem] {
+        let data = try Data(contentsOf: url)
+        let importedItems = try decodeBackupItems(from: data)
+
+        var db = try loadDatabase()
+        let now = Self.utcNow()
+        let appendedItems = importedItems.map { importedItem in
+            let item = StoredItem(
+                id: String(db.nextId),
+                name: importedItem.name.isEmpty ? "NEW_CODE" : importedItem.name,
+                type: importedItem.type.isEmpty ? "UI Component" : importedItem.type,
+                html: importedItem.html,
+                css: importedItem.css,
+                js: importedItem.js,
+                all: importedItem.all ?? "",
+                createdAt: importedItem.createdAt ?? now,
+                updatedAt: importedItem.updatedAt
+            )
+            db.nextId += 1
+            return item
+        }
+
+        db.items.append(contentsOf: appendedItems)
+        db.updatedAt = now
+        try saveDatabase(db)
+
+        return appendedItems
+    }
+
     private func ensureDatabaseExists() throws {
         guard !FileManager.default.fileExists(atPath: dbURL.path) else {
             let db = try loadDatabase()
@@ -209,6 +258,22 @@ final class ItemStore {
         let normalized = normalize(database)
         let data = try encoder.encode(normalized)
         try data.write(to: dbURL, options: .atomic)
+    }
+
+    private func decodeBackupItems(from data: Data) throws -> [StoredItem] {
+        if let backup = try? decoder.decode(ItemBackup.self, from: data) {
+            return backup.items
+        }
+
+        if let database = try? decoder.decode(ItemDatabase.self, from: data) {
+            return database.items
+        }
+
+        if let items = try? decoder.decode([StoredItem].self, from: data) {
+            return items
+        }
+
+        throw ItemStoreError.invalidBackup
     }
 
     private func normalize(_ database: ItemDatabase) -> ItemDatabase {
