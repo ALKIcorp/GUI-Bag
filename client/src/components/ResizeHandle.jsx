@@ -1,7 +1,7 @@
 export default function ResizeHandle({ onMouseDown }) {
   return (
     <div
-      className="absolute -right-3 -bottom-3 w-10 h-10 flex items-center justify-center z-40 pointer-events-none group"
+      className="absolute -right-3 -bottom-3 w-10 h-10 flex items-center justify-center z-10 pointer-events-none group"
     >
       <button
         type="button"

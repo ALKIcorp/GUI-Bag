@@ -17,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4D1A5DB02F7F744900D18002 /* GUI-Bag-Mac-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GUI-Bag-Mac-Info.plist"; sourceTree = SOURCE_ROOT; };
 		A1B2C3D41F00100000000002 /* GUI Bag Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "GUI Bag Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D41F00100000000020 /* GUIBagMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GUIBagMacApp.swift; sourceTree = "<group>"; };
 		A1B2C3D41F00100000000021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -49,6 +50,7 @@
 		A1B2C3D41F00100000000004 /* GUI Bag Mac */ = {
 			isa = PBXGroup;
 			children = (
+				4D1A5DB02F7F744900D18002 /* GUI-Bag-Mac-Info.plist */,
 				A1B2C3D41F00100000000020 /* GUIBagMacApp.swift */,
 				A1B2C3D41F00100000000021 /* ContentView.swift */,
 				A1B2C3D41F00100000000022 /* WebViewContainer.swift */,
@@ -153,9 +155,9 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -174,9 +176,9 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -194,13 +196,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "GUI-Bag-Mac-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "GUI Bag Mac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -221,13 +224,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "GUI-Bag-Mac-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "GUI Bag Mac";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

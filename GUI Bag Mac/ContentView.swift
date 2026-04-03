@@ -5,11 +5,14 @@ struct ContentView: View {
     @StateObject private var model = AppModel()
     @State private var pendingNewItemName = ""
     @State private var isShowingAddModal = false
+    @AppStorage("selectedThemeName") private var selectedThemeName = ConsoleThemePreset.presets.first?.name ?? "Crimson Glass"
 
     var body: some View {
+        let theme = ConsoleThemePreset.named(selectedThemeName)
+
         GeometryReader { proxy in
             ZStack {
-                WindowBackgroundGlass()
+                WindowBackgroundGlass(theme: theme)
                     .ignoresSafeArea()
 
                 Color.black.opacity(0.06)
@@ -17,6 +20,8 @@ struct ContentView: View {
 
                 ConsoleWindow(
                     model: model,
+                    theme: theme,
+                    onThemeSelected: { selectedThemeName = $0.name },
                     onAdd: {
                         pendingNewItemName = model.nextDefaultName()
                         isShowingAddModal = true
@@ -29,6 +34,7 @@ struct ContentView: View {
 
                 if isShowingAddModal {
                     AddItemOverlay(
+                        theme: theme,
                         itemName: $pendingNewItemName,
                         onClose: {
                             isShowingAddModal = false
@@ -51,24 +57,82 @@ struct ContentView: View {
     }
 }
 
-private enum ConsoleTheme {
-    static let shell = Color(red: 0.08, green: 0.08, blue: 0.08)
-    static let topRed = Color(red: 0.49, green: 0.10, blue: 0.16)
-    static let bottomRed = Color(red: 0.66, green: 0.11, blue: 0.23)
-    static let panel = Color(red: 0.10, green: 0.10, blue: 0.10)
-    static let panelDeep = Color.black
-    static let selectedLight = Color.white
-    static let selectedText = Color.black
-    static let textPrimary = Color.white
-    static let textSecondary = Color.white.opacity(0.58)
-    static let textMuted = Color(red: 0.55, green: 0.55, blue: 0.55)
-    static let accentPink = Color(red: 0.95, green: 0.35, blue: 0.56)
-    static let success = Color(red: 0.15, green: 0.67, blue: 0.33)
-    static let danger = Color(red: 0.86, green: 0.17, blue: 0.24)
-    static let blue = Color(red: 0.16, green: 0.42, blue: 0.92)
+private struct ConsoleThemePreset: Identifiable, Equatable {
+    let name: String
+    let appBg: Color
+    let panel: Color
+    let panel2: Color
+    let accent: Color
+    let accent2: Color
+    let text: Color
+    let mutedText: Color
+    let stroke: Color
+    let editorBg: Color
+    let previewBg: Color
+    let success: Color
+    let danger: Color
+
+    var id: String { name }
+
+    var shell: Color { editorBg }
+    var topRed: Color { panel2 }
+    var bottomRed: Color { panel }
+    var panelDeep: Color { editorBg }
+    var selectedLight: Color { accent }
+    var selectedText: Color { panel }
+    var textPrimary: Color { text }
+    var textSecondary: Color { mutedText }
+    var textMuted: Color { mutedText }
+    var accentPink: Color { accent2 }
+    var blue: Color { accent2 }
+
+    static func named(_ name: String) -> ConsoleThemePreset {
+        presets.first(where: { $0.name == name }) ?? presets[0]
+    }
+
+    static let presets: [ConsoleThemePreset] = [
+        .init(name: "Crimson Glass", appBg: .hex("0A0A0D"), panel: .hex("9E1633"), panel2: .hex("7C1028"), accent: .hex("F4F4F2"), accent2: .hex("FF7A9E"), text: .hex("FFF7FA"), mutedText: .hex("D7B8C2"), stroke: .hex("2A0F17"), editorBg: .hex("050507"), previewBg: .hex("F3F3F1"), success: .hex("4DD08A"), danger: .hex("FF4D6D")),
+        .init(name: "Obsidian Ice", appBg: .hex("05070A"), panel: .hex("111827"), panel2: .hex("1C2533"), accent: .hex("DDF4FF"), accent2: .hex("6FD3FF"), text: .hex("F5FBFF"), mutedText: .hex("9FB2C4"), stroke: .hex("243041"), editorBg: .hex("030508"), previewBg: .hex("EAF6FF"), success: .hex("52D9A6"), danger: .hex("FF6B7A")),
+        .init(name: "Royal Plum", appBg: .hex("0D0812"), panel: .hex("4B1E5A"), panel2: .hex("341240"), accent: .hex("F5D8FF"), accent2: .hex("C77DFF"), text: .hex("FFF6FF"), mutedText: .hex("C9A8D5"), stroke: .hex("221028"), editorBg: .hex("07040A"), previewBg: .hex("F8F2FF"), success: .hex("49D18A"), danger: .hex("FF5D87")),
+        .init(name: "Emerald Noir", appBg: .hex("06100D"), panel: .hex("0F5C4A"), panel2: .hex("0B4336"), accent: .hex("D9FFF3"), accent2: .hex("55E6B5"), text: .hex("F3FFF9"), mutedText: .hex("A6D3C5"), stroke: .hex("103028"), editorBg: .hex("040806"), previewBg: .hex("ECFFF8"), success: .hex("6EF0A6"), danger: .hex("FF6A6A")),
+        .init(name: "Bronze Luxe", appBg: .hex("110C08"), panel: .hex("7A4A2C"), panel2: .hex("5B351E"), accent: .hex("F8E7D8"), accent2: .hex("D9A066"), text: .hex("FFF8F1"), mutedText: .hex("D0B49C"), stroke: .hex("2B1A10"), editorBg: .hex("080503"), previewBg: .hex("FFF5EC"), success: .hex("63D79B"), danger: .hex("FF6E5B")),
+        .init(name: "Arctic Mint", appBg: .hex("081012"), panel: .hex("A7F0E9"), panel2: .hex("74D9D0"), accent: .hex("0E2A2C"), accent2: .hex("E8FFFD"), text: .hex("F8FFFF"), mutedText: .hex("A7C7C8"), stroke: .hex("204245"), editorBg: .hex("0A1415"), previewBg: .hex("F2FFFE"), success: .hex("42D392"), danger: .hex("FF647C")),
+        .init(name: "Graphite Orange", appBg: .hex("0B0B0C"), panel: .hex("1A1A1E"), panel2: .hex("24242A"), accent: .hex("FF9F43"), accent2: .hex("FFD7A8"), text: .hex("FFF8F0"), mutedText: .hex("B7ADA2"), stroke: .hex("35353D"), editorBg: .hex("050506"), previewBg: .hex("FFF4E8"), success: .hex("59D68D"), danger: .hex("FF5A5F")),
+        .init(name: "Soft Sand", appBg: .hex("15120E"), panel: .hex("D7C2A4"), panel2: .hex("B89E7B"), accent: .hex("5B4330"), accent2: .hex("FFF4E6"), text: .hex("FFFDF8"), mutedText: .hex("C7BAAA"), stroke: .hex("6E5B46"), editorBg: .hex("0E0A07"), previewBg: .hex("FFF9F0"), success: .hex("6BCB95"), danger: .hex("E96A5F")),
+        .init(name: "Candy Core", appBg: .hex("120914"), panel: .hex("FF4FA3"), panel2: .hex("D92C82"), accent: .hex("FFF0F7"), accent2: .hex("7DF9FF"), text: .hex("FFF8FC"), mutedText: .hex("E3B6CB"), stroke: .hex("4A1830"), editorBg: .hex("09040A"), previewBg: .hex("FFF5FA"), success: .hex("54E29B"), danger: .hex("FF5C8A")),
+        .init(name: "Ocean Terminal", appBg: .hex("06131A"), panel: .hex("0E7490"), panel2: .hex("125D73"), accent: .hex("D6F6FF"), accent2: .hex("7CE2FF"), text: .hex("F3FCFF"), mutedText: .hex("A7C9D1"), stroke: .hex("123543"), editorBg: .hex("040A0D"), previewBg: .hex("EEFBFF"), success: .hex("51D9A4"), danger: .hex("FF6B6B")),
+        .init(name: "Acid Lime", appBg: .hex("0A0D05"), panel: .hex("7FBF00"), panel2: .hex("5F9300"), accent: .hex("F6FFE0"), accent2: .hex("D7FF70"), text: .hex("FAFFF0"), mutedText: .hex("C4D49B"), stroke: .hex("28330E"), editorBg: .hex("060803"), previewBg: .hex("F9FFF0"), success: .hex("64E08C"), danger: .hex("FF5D5D")),
+        .init(name: "Midnight Rose", appBg: .hex("09080C"), panel: .hex("6B1F3A"), panel2: .hex("4C1628"), accent: .hex("FFDCE8"), accent2: .hex("FF8FB1"), text: .hex("FFF7FA"), mutedText: .hex("D2ACB8"), stroke: .hex("241119"), editorBg: .hex("050407"), previewBg: .hex("FFF2F7"), success: .hex("57D58F"), danger: .hex("FF5878")),
+        .init(name: "Steel Blue Pro", appBg: .hex("0A0E14"), panel: .hex("2B4257"), panel2: .hex("1E3142"), accent: .hex("E4F1FF"), accent2: .hex("8DBDFF"), text: .hex("F7FAFF"), mutedText: .hex("AAB7C6"), stroke: .hex("24313F"), editorBg: .hex("06090D"), previewBg: .hex("F0F7FF"), success: .hex("5ED39A"), danger: .hex("FF6D6D")),
+        .init(name: "Ivory Cherry", appBg: .hex("1A1516"), panel: .hex("F6F1EC"), panel2: .hex("E6D8D1"), accent: .hex("9F1D35"), accent2: .hex("FFB3C1"), text: .hex("1C1718"), mutedText: .hex("7B6D6F"), stroke: .hex("C9B4B0"), editorBg: .hex("0F0B0C"), previewBg: .hex("FFFDFC"), success: .hex("2FAF73"), danger: .hex("D6455D")),
+        .init(name: "Neon Grape", appBg: .hex("08050D"), panel: .hex("2C114A"), panel2: .hex("1D0B33"), accent: .hex("B517FF"), accent2: .hex("6EF3FF"), text: .hex("FAF4FF"), mutedText: .hex("BBA9CB"), stroke: .hex("2F1E42"), editorBg: .hex("040208"), previewBg: .hex("F8F1FF"), success: .hex("4DDB94"), danger: .hex("FF5A7A"))
+    ]
+}
+
+private extension Color {
+    static func hex(_ value: String) -> Color {
+        let hex = value.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        return Color(
+            red: Double((int >> 16) & 0xFF) / 255,
+            green: Double((int >> 8) & 0xFF) / 255,
+            blue: Double(int & 0xFF) / 255
+        )
+    }
+
+    var cssHex: String {
+        let nsColor = NSColor(self).usingColorSpace(.deviceRGB) ?? .white
+        let red = Int(round(nsColor.redComponent * 255))
+        let green = Int(round(nsColor.greenComponent * 255))
+        let blue = Int(round(nsColor.blueComponent * 255))
+        return String(format: "#%02X%02X%02X", red, green, blue)
+    }
 }
 
 private struct WindowBackgroundGlass: NSViewRepresentable {
+    let theme: ConsoleThemePreset
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.blendingMode = .behindWindow
@@ -83,6 +147,8 @@ private struct WindowBackgroundGlass: NSViewRepresentable {
         nsView.material = .underWindowBackground
         nsView.state = .active
         nsView.alphaValue = 0.24
+        nsView.wantsLayer = true
+        nsView.layer?.backgroundColor = NSColor(theme.appBg).withAlphaComponent(0.18).cgColor
     }
 }
 
@@ -114,26 +180,28 @@ private struct WindowTransparencyConfigurator: NSViewRepresentable {
 
 private struct ConsoleWindow: View {
     @ObservedObject var model: AppModel
+    let theme: ConsoleThemePreset
+    let onThemeSelected: (ConsoleThemePreset) -> Void
     let onAdd: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            PreviewSection(item: model.currentItem)
+            PreviewSection(item: model.currentItem, theme: theme)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: .infinity)
 
-            HandleDivider()
+            HandleDivider(theme: theme)
 
-            BottomSection(model: model, onAdd: onAdd)
+            BottomSection(model: model, theme: theme, onThemeSelected: onThemeSelected, onAdd: onAdd)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: .infinity)
         }
         .padding(8)
-        .background(ConsoleTheme.shell)
+        .background(theme.shell)
         .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 42, style: .continuous)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                .stroke(theme.text.opacity(0.05), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.85), radius: 60, x: 0, y: 30)
     }
@@ -141,21 +209,22 @@ private struct ConsoleWindow: View {
 
 private struct PreviewSection: View {
     let item: StoredItem?
+    let theme: ConsoleThemePreset
 
     var body: some View {
         ZStack {
-            ConsoleTheme.topRed
+            theme.topRed
 
             DotPatternOverlay()
                 .opacity(0.10)
 
-            PreviewFrame(item: item)
-            .padding(24)
+            PreviewFrame(item: item, theme: theme)
+                .padding(24)
         }
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(Color.black.opacity(0.25), lineWidth: 8)
+                .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
         )
     }
 }
@@ -182,19 +251,21 @@ private struct DotPatternOverlay: View {
 
 private struct PreviewFrame: View {
     let item: StoredItem?
+    let theme: ConsoleThemePreset
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(ConsoleTheme.selectedLight)
+                .fill(theme.previewBg)
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(ConsoleTheme.shell, lineWidth: 4)
+                .stroke(theme.stroke, lineWidth: 4)
 
             if let item {
-                PreviewWebView(html: makePreviewHTML(for: item))
+                PreviewWebView(html: makePreviewHTML(for: item, theme: theme))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 ConsoleEmptyState(
+                    theme: theme,
                     title: "LINK OFFLINE",
                     message: "Add an item to render the preview frame."
                 )
@@ -205,7 +276,7 @@ private struct PreviewFrame: View {
 
 }
 
-private func makePreviewHTML(for item: StoredItem) -> String {
+private func makePreviewHTML(for item: StoredItem, theme: ConsoleThemePreset) -> String {
     return """
     <!DOCTYPE html>
     <html>
@@ -216,8 +287,8 @@ private func makePreviewHTML(for item: StoredItem) -> String {
           html, body {
             margin: 0;
             min-height: 100%;
-            background: #111111;
-            color: white;
+            background: \(theme.previewBg.cssHex);
+            color: \(theme.text.cssHex);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           }
           body {
@@ -239,32 +310,37 @@ private func makePreviewHTML(for item: StoredItem) -> String {
 }
 
 private struct HandleDivider: View {
+    let theme: ConsoleThemePreset
+
     var body: some View {
         HStack {
             Capsule()
-                .fill(ConsoleTheme.panelDeep.opacity(0.9))
+                .fill(theme.panelDeep.opacity(0.9))
                 .frame(width: 56, height: 6)
 
             Spacer()
 
             Capsule()
-                .fill(ConsoleTheme.panelDeep.opacity(0.9))
+                .fill(theme.panelDeep.opacity(0.9))
                 .frame(width: 56, height: 6)
         }
         .padding(.horizontal, 64)
         .frame(height: 24)
-        .background(ConsoleTheme.shell)
+        .background(theme.shell)
     }
 }
 
 private struct BottomSection: View {
     @ObservedObject var model: AppModel
+    let theme: ConsoleThemePreset
+    let onThemeSelected: (ConsoleThemePreset) -> Void
     let onAdd: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 EditorPanel(
+                    theme: theme,
                     currentItem: model.currentItem,
                     activeTab: $model.activeTab,
                     code: model.codeBinding,
@@ -273,6 +349,7 @@ private struct BottomSection: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 ItemListPanel(
+                    theme: theme,
                     items: model.items,
                     selectedID: $model.selectedID,
                     rename: model.renameItem,
@@ -282,21 +359,24 @@ private struct BottomSection: View {
             }
 
             FooterBar(
+                theme: theme,
+                onThemeSelected: onThemeSelected,
                 canRemove: model.items.count > 1 && model.currentItem != nil,
                 onAdd: onAdd,
                 onRemove: model.deleteSelectedItem
             )
         }
-        .background(ConsoleTheme.bottomRed)
+        .background(theme.bottomRed)
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(Color.black.opacity(0.22), lineWidth: 8)
+                .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
         )
     }
 }
 
 private struct EditorPanel: View {
+    let theme: ConsoleThemePreset
     let currentItem: StoredItem?
     @Binding var activeTab: EditorTab
     let code: (EditorTab) -> Binding<String>
@@ -311,20 +391,20 @@ private struct EditorPanel: View {
                         .font(.system(size: 11, weight: .black, design: .rounded))
                         .italic()
                         .tracking(1.2)
-                        .foregroundStyle(ConsoleTheme.textPrimary)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
 
                     Text((currentItem?.type ?? "UNASSIGNED").uppercased())
                         .font(.system(size: 8, weight: .bold, design: .rounded))
                         .tracking(1.8)
-                        .foregroundStyle(ConsoleTheme.textSecondary)
+                        .foregroundStyle(theme.textSecondary)
                         .lineLimit(1)
                 }
                 .frame(width: 118, alignment: .leading)
 
                 HStack(spacing: 8) {
                     ForEach(EditorTab.allCases) { tab in
-                        TabButton(tab: tab, isSelected: activeTab == tab) {
+                        TabButton(theme: theme, tab: tab, isSelected: activeTab == tab) {
                             activeTab = tab
                         }
                     }
@@ -336,7 +416,7 @@ private struct EditorPanel: View {
                 Text(statusText.uppercased())
                     .font(.system(size: 8, weight: .black, design: .monospaced))
                     .tracking(1.8)
-                    .foregroundStyle(ConsoleTheme.accentPink.opacity(0.8))
+                    .foregroundStyle(theme.accentPink.opacity(0.8))
                     .padding(.top, 3)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -346,9 +426,9 @@ private struct EditorPanel: View {
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(ConsoleTheme.panelDeep.opacity(0.98))
+                    .fill(theme.panelDeep.opacity(0.98))
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(ConsoleTheme.shell, lineWidth: 4)
+                    .stroke(theme.stroke, lineWidth: 4)
 
                 VStack(spacing: 0) {
                     HStack {
@@ -356,12 +436,12 @@ private struct EditorPanel: View {
                             .font(.system(size: 9, weight: .black, design: .monospaced))
                             .italic()
                             .tracking(1.6)
-                            .foregroundStyle(ConsoleTheme.accentPink.opacity(0.9))
+                            .foregroundStyle(theme.accentPink.opacity(0.9))
                         Spacer()
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(ConsoleTheme.panel)
+                    .background(theme.panel2)
                     .overlay(alignment: .bottom) {
                         Rectangle()
                             .fill(Color.black.opacity(0.7))
@@ -370,19 +450,20 @@ private struct EditorPanel: View {
 
                     if currentItem == nil {
                         ConsoleEmptyState(
+                            theme: theme,
                             title: "NO CONTENT",
                             message: "Select an item to edit HTML, CSS, JS, or ALL."
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if activeTab == .all {
-                        AllTabEditor(code: code, collapsedSections: $collapsedSections)
+                        AllTabEditor(theme: theme, code: code, collapsedSections: $collapsedSections)
                     } else {
                         TextEditor(text: code(activeTab))
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundStyle(ConsoleTheme.accentPink)
+                            .foregroundStyle(theme.accentPink)
                             .scrollContentBackground(.hidden)
                             .padding(12)
-                            .background(ConsoleTheme.panelDeep.opacity(0.001))
+                            .background(theme.panelDeep.opacity(0.001))
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -398,6 +479,7 @@ private struct EditorPanel: View {
 }
 
 private struct AllTabEditor: View {
+    let theme: ConsoleThemePreset
     let code: (EditorTab) -> Binding<String>
     @Binding var collapsedSections: Set<EditorTab>
 
@@ -408,6 +490,7 @@ private struct AllTabEditor: View {
             VStack(spacing: 12) {
                 ForEach(tabs) { tab in
                     EditorSectionCard(
+                        theme: theme,
                         tab: tab,
                         text: code(tab),
                         isCollapsed: collapsedSections.contains(tab),
@@ -417,7 +500,7 @@ private struct AllTabEditor: View {
             }
             .padding(12)
         }
-        .background(ConsoleTheme.panelDeep.opacity(0.001))
+        .background(theme.panelDeep.opacity(0.001))
     }
 
     private func toggle(_ tab: EditorTab) {
@@ -430,6 +513,7 @@ private struct AllTabEditor: View {
 }
 
 private struct EditorSectionCard: View {
+    let theme: ConsoleThemePreset
     let tab: EditorTab
     @Binding var text: String
     let isCollapsed: Bool
@@ -441,7 +525,7 @@ private struct EditorSectionCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                         .font(.system(size: 10, weight: .black))
-                        .foregroundStyle(ConsoleTheme.textSecondary)
+                        .foregroundStyle(theme.textSecondary)
 
                     Text(sectionTitle)
                         .font(.system(size: 9, weight: .black, design: .monospaced))
@@ -453,11 +537,11 @@ private struct EditorSectionCard: View {
                     Text(isCollapsed ? "EXPAND" : "MINIMIZE")
                         .font(.system(size: 8, weight: .black, design: .monospaced))
                         .tracking(1.4)
-                        .foregroundStyle(ConsoleTheme.textSecondary.opacity(0.8))
+                        .foregroundStyle(theme.textSecondary.opacity(0.8))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(ConsoleTheme.panel)
+                .background(theme.panel2)
             }
             .buttonStyle(.plain)
 
@@ -468,14 +552,14 @@ private struct EditorSectionCard: View {
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 150)
                     .padding(12)
-                    .background(ConsoleTheme.panelDeep.opacity(0.001))
+                    .background(theme.panelDeep.opacity(0.001))
             }
         }
-        .background(ConsoleTheme.panel.opacity(0.45))
+        .background(theme.panel2.opacity(0.45))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(theme.text.opacity(0.08), lineWidth: 1)
         )
     }
 
@@ -495,18 +579,19 @@ private struct EditorSectionCard: View {
     private var sectionColor: Color {
         switch tab {
         case .html:
-            return ConsoleTheme.accentPink
+            return theme.accentPink
         case .css:
-            return Color.cyan.opacity(0.9)
+            return theme.accent
         case .js:
-            return Color.orange.opacity(0.9)
+            return theme.text
         case .all:
-            return ConsoleTheme.textPrimary
+            return theme.textPrimary
         }
     }
 }
 
 private struct TabButton: View {
+    let theme: ConsoleThemePreset
     let tab: EditorTab
     let isSelected: Bool
     let action: () -> Void
@@ -521,12 +606,12 @@ private struct TabButton: View {
                     .tracking(0.8)
             }
             .frame(width: 40, height: 40)
-            .foregroundStyle(isSelected ? ConsoleTheme.bottomRed : ConsoleTheme.textPrimary)
-            .background(isSelected ? ConsoleTheme.selectedLight : ConsoleTheme.topRed.opacity(0.35))
+            .foregroundStyle(isSelected ? theme.bottomRed : theme.textPrimary)
+            .background(isSelected ? theme.selectedLight : theme.topRed.opacity(0.35))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(isSelected ? Color.white : Color.white.opacity(0.10), lineWidth: 2)
+                    .stroke(isSelected ? theme.accent : theme.text.opacity(0.10), lineWidth: 2)
             )
             .shadow(color: .black.opacity(isSelected ? 0.35 : 0), radius: 12, x: 0, y: 6)
             .scaleEffect(isSelected ? 1.04 : 1)
@@ -536,6 +621,7 @@ private struct TabButton: View {
 }
 
 private struct ItemListPanel: View {
+    let theme: ConsoleThemePreset
     let items: [StoredItem]
     @Binding var selectedID: String?
     let rename: (String, String) -> Void
@@ -547,6 +633,7 @@ private struct ItemListPanel: View {
                 LazyVStack(spacing: 8) {
                     ForEach(items) { item in
                         ItemRow(
+                            theme: theme,
                             item: item,
                             isSelected: item.id == selectedID,
                             onSelect: { selectedID = item.id },
@@ -564,38 +651,39 @@ private struct ItemListPanel: View {
                     Text("ACTIVE PROFILE")
                         .font(.system(size: 8, weight: .black, design: .rounded))
                         .tracking(1.8)
-                        .foregroundStyle(ConsoleTheme.textMuted)
+                        .foregroundStyle(theme.textMuted)
                     Text(currentItem.name.uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
                         .italic()
-                        .foregroundStyle(ConsoleTheme.textPrimary)
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
                     Text(currentItem.type.uppercased())
                         .font(.system(size: 8, weight: .bold, design: .rounded))
                         .tracking(1.4)
-                        .foregroundStyle(ConsoleTheme.textSecondary)
+                        .foregroundStyle(theme.textSecondary)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(ConsoleTheme.panelDeep.opacity(0.45))
+                .background(theme.panelDeep.opacity(0.45))
                 .overlay(alignment: .top) {
                     Rectangle()
-                        .fill(ConsoleTheme.shell)
+                        .fill(theme.stroke)
                         .frame(height: 2)
                 }
             }
         }
-        .background(ConsoleTheme.panel)
+        .background(theme.panel2)
         .overlay(alignment: .leading) {
             Rectangle()
-                .fill(ConsoleTheme.shell)
+                .fill(theme.stroke)
                 .frame(width: 4)
         }
     }
 }
 
 private struct ItemRow: View {
+    let theme: ConsoleThemePreset
     let item: StoredItem
     let isSelected: Bool
     let onSelect: () -> Void
@@ -608,7 +696,7 @@ private struct ItemRow: View {
     var body: some View {
         ZStack {
             PolygonRowShape()
-                .fill(isSelected ? ConsoleTheme.selectedLight : Color(red: 0.16, green: 0.16, blue: 0.16))
+                .fill(isSelected ? theme.selectedLight : theme.panelDeep.opacity(0.82))
 
             Group {
                 if isEditing {
@@ -618,7 +706,7 @@ private struct ItemRow: View {
                         .font(.system(size: 8, weight: .black, design: .rounded))
                         .italic()
                         .textCase(.uppercase)
-                        .foregroundStyle(isSelected ? ConsoleTheme.selectedText : ConsoleTheme.textPrimary)
+                        .foregroundStyle(isSelected ? theme.selectedText : theme.textPrimary)
                         .focused($isFocused)
                         .onSubmit(commitRename)
                         .onExitCommand(perform: cancelRename)
@@ -632,7 +720,7 @@ private struct ItemRow: View {
                         .font(.system(size: 8, weight: .black, design: .rounded))
                         .italic()
                         .tracking(-0.2)
-                        .foregroundStyle(isSelected ? ConsoleTheme.selectedText : ConsoleTheme.textMuted)
+                        .foregroundStyle(isSelected ? theme.selectedText : theme.textMuted)
                         .lineLimit(1)
                 }
             }
@@ -686,78 +774,161 @@ private struct PolygonRowShape: Shape {
 }
 
 private struct FooterBar: View {
+    let theme: ConsoleThemePreset
+    let onThemeSelected: (ConsoleThemePreset) -> Void
     let canRemove: Bool
     let onAdd: () -> Void
     let onRemove: () -> Void
+    @State private var isShowingSettings = false
 
     var body: some View {
         HStack {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .black))
-                    .foregroundStyle(Color.gray.opacity(0.7))
+                    .foregroundStyle(theme.mutedText.opacity(0.7))
 
                 Text("ALKI_SYS")
                     .font(.system(size: 7, weight: .black, design: .rounded))
                     .italic()
                     .tracking(1.6)
-                    .foregroundStyle(Color.gray.opacity(0.88))
+                    .foregroundStyle(theme.mutedText.opacity(0.88))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(ConsoleTheme.panel.opacity(0.95))
+                    .background(theme.panel2.opacity(0.95))
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                            .stroke(theme.text.opacity(0.05), lineWidth: 1)
                     )
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .black))
-                    .foregroundStyle(Color.gray.opacity(0.7))
+                    .foregroundStyle(theme.mutedText.opacity(0.7))
             }
 
             Spacer()
 
             HStack(spacing: 10) {
                 FooterActionButton(
-                    color: ConsoleTheme.success,
-                    shadow: Color(red: 0.07, green: 0.37, blue: 0.18),
+                    color: theme.success,
+                    shadow: theme.appBg.opacity(0.9),
                     systemImage: "plus"
                 ) {
                     onAdd()
                 }
 
                 FooterActionButton(
-                    color: ConsoleTheme.danger,
-                    shadow: Color(red: 0.45, green: 0.10, blue: 0.12),
+                    color: theme.danger,
+                    shadow: theme.appBg.opacity(0.9),
                     systemImage: "trash"
                 ) {
                     onRemove()
                 }
                 .disabled(!canRemove)
 
-                ZStack {
-                    Circle()
-                        .fill(ConsoleTheme.blue)
-                    Circle()
-                        .stroke(.white, lineWidth: 2)
-                    Text("U")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
-                        .italic()
-                        .foregroundStyle(.white)
+                Button(action: { isShowingSettings.toggle() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 11, weight: .black))
+                        Text("SETTINGS")
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .tracking(1.1)
+                    }
+                    .foregroundStyle(theme.previewBg)
+                    .padding(.horizontal, 12)
+                    .frame(height: 28)
+                    .background(theme.blue)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(theme.accent, lineWidth: 2)
+                    )
                 }
-                .frame(width: 28, height: 28)
+                .buttonStyle(.plain)
                 .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
+                .popover(isPresented: $isShowingSettings, arrowEdge: .bottom) {
+                    ThemeSettingsPopover(theme: theme, onThemeSelected: onThemeSelected)
+                }
             }
         }
         .padding(.horizontal, 18)
         .frame(height: 56)
-        .background(Color.black.opacity(0.38))
+        .background(theme.appBg.opacity(0.72))
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(ConsoleTheme.shell)
+                .fill(theme.stroke)
                 .frame(height: 2)
         }
+    }
+}
+
+private struct ThemeSettingsPopover: View {
+    let theme: ConsoleThemePreset
+    let onThemeSelected: (ConsoleThemePreset) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("THEME PRESETS")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(1.8)
+                .foregroundStyle(theme.accentPink)
+
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(ConsoleThemePreset.presets) { preset in
+                        Button {
+                            onThemeSelected(preset)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text(preset.name.uppercased())
+                                        .font(.system(size: 10, weight: .black, design: .rounded))
+                                        .foregroundStyle(preset.text)
+
+                                    Spacer()
+
+                                    if preset == theme {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(preset.accent)
+                                    }
+                                }
+
+                                HStack(spacing: 6) {
+                                    ThemeSwatch(color: preset.appBg)
+                                    ThemeSwatch(color: preset.panel)
+                                    ThemeSwatch(color: preset.panel2)
+                                    ThemeSwatch(color: preset.accent)
+                                    ThemeSwatch(color: preset.accent2)
+                                }
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(preset.panel)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(preset == theme ? preset.accent2 : preset.stroke, lineWidth: 2)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(width: 320, height: 360)
+        }
+        .padding(14)
+        .background(theme.editorBg)
+    }
+}
+
+private struct ThemeSwatch: View {
+    let color: Color
+
+    var body: some View {
+        Capsule()
+            .fill(color)
+            .frame(height: 10)
     }
 }
 
@@ -790,6 +961,7 @@ private struct FooterActionButton: View {
 }
 
 private struct AddItemOverlay: View {
+    let theme: ConsoleThemePreset
     @Binding var itemName: String
     let onClose: () -> Void
     let onConfirm: () -> Void
@@ -808,19 +980,19 @@ private struct AddItemOverlay: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(ConsoleTheme.topRed.opacity(0.22))
+                                    .fill(theme.topRed.opacity(0.22))
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(ConsoleTheme.topRed.opacity(0.35), lineWidth: 1)
+                                    .stroke(theme.topRed.opacity(0.35), lineWidth: 1)
                                 Image(systemName: "shippingbox.fill")
                                     .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(ConsoleTheme.topRed)
+                                    .foregroundStyle(theme.topRed)
                             }
                             .frame(width: 40, height: 40)
 
                             Text("ADD NEW ITEM")
                                 .font(.system(size: 22, weight: .black, design: .rounded))
                                 .italic()
-                                .foregroundStyle(ConsoleTheme.textPrimary)
+                                .foregroundStyle(theme.textPrimary)
                         }
 
                         Spacer()
@@ -828,7 +1000,7 @@ private struct AddItemOverlay: View {
                         Button(action: onClose) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(ConsoleTheme.textSecondary)
+                                .foregroundStyle(theme.textSecondary)
                         }
                         .buttonStyle(.plain)
                     }
@@ -840,16 +1012,16 @@ private struct AddItemOverlay: View {
                         Text("ITEM DESIGNATION")
                             .font(.system(size: 10, weight: .black, design: .rounded))
                             .tracking(1.8)
-                            .foregroundStyle(ConsoleTheme.topRed)
+                            .foregroundStyle(theme.topRed)
 
                         TextField("ENTER NAME...", text: $itemName)
                             .textFieldStyle(.plain)
                             .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundStyle(ConsoleTheme.textPrimary)
+                            .foregroundStyle(theme.textPrimary)
                             .padding(16)
                             .background(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .fill(ConsoleTheme.panelDeep.opacity(0.96))
+                                    .fill(theme.panelDeep.opacity(0.96))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -863,21 +1035,21 @@ private struct AddItemOverlay: View {
 
                     VStack(spacing: 12) {
                         AngledModalButton(title: "CONFIRM ADDITION", foreground: .black, background: .white, action: confirm)
-                        AngledModalButton(title: "CANCEL", foreground: ConsoleTheme.textMuted, background: ConsoleTheme.panel, action: onClose)
+                        AngledModalButton(title: "CANCEL", foreground: theme.textMuted, background: theme.panel2, action: onClose)
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 24)
 
                     Rectangle()
-                        .fill(ConsoleTheme.topRed.opacity(0.5))
+                        .fill(theme.topRed.opacity(0.5))
                         .frame(height: 8)
                 }
-                .background(ConsoleTheme.panel)
+                .background(theme.panel2)
                 .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
             }
             .padding(24)
             .frame(width: 460)
-            .background(ConsoleTheme.bottomRed)
+            .background(theme.bottomRed)
             .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 38, style: .continuous)
@@ -935,6 +1107,7 @@ private struct AngledButtonShape: Shape {
 }
 
 private struct ConsoleEmptyState: View {
+    let theme: ConsoleThemePreset
     let title: String
     let message: String
 
@@ -944,11 +1117,11 @@ private struct ConsoleEmptyState: View {
                 .font(.system(size: 13, weight: .black, design: .rounded))
                 .italic()
                 .tracking(1.1)
-                .foregroundStyle(ConsoleTheme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
             Text(message.uppercased())
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .tracking(1.1)
-                .foregroundStyle(ConsoleTheme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .padding(24)

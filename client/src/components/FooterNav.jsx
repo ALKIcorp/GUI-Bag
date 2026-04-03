@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, ChevronLeft, Trash2, Plus, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Trash2, Plus, Check, SlidersHorizontal } from 'lucide-react';
 
 function ThemeMenu({ theme, themePresets, onSelectTheme, onClose }) {
   return (
@@ -90,7 +90,7 @@ export default function FooterNav({ theme, themePresets, onSelectTheme, canRemov
         <ChevronRight size={20} style={{ color: theme.mutedText }} />
       </div>
 
-      <div className="flex gap-1.5 items-center">
+      <div className="flex gap-1.5 items-center pr-3 pb-1 relative z-[70] pointer-events-auto">
         <button
           onClick={onAdd}
           className="w-7 h-7 rounded flex items-center justify-center border-b-[3px] active:border-b-0 active:translate-y-0.5"
@@ -108,7 +108,7 @@ export default function FooterNav({ theme, themePresets, onSelectTheme, canRemov
           <Trash2 size={14} />
         </button>
 
-        <div className="relative" ref={themeMenuRef}>
+        <div className="relative z-[80] pointer-events-auto" ref={themeMenuRef}>
           {isThemeMenuOpen ? (
             <ThemeMenu
               theme={theme}
@@ -121,16 +121,17 @@ export default function FooterNav({ theme, themePresets, onSelectTheme, canRemov
           <button
             type="button"
             onClick={() => setIsThemeMenuOpen((open) => !open)}
-            className="w-8 h-8 rounded-full border-[3px] flex items-center justify-center font-black text-[11px] italic shadow-lg"
+            className="relative z-[90] h-8 px-3 rounded-full border-[3px] flex items-center justify-center gap-1.5 font-black text-[8px] uppercase tracking-[0.18em] shadow-lg pointer-events-auto"
             style={{
               backgroundColor: theme.accent2,
               borderColor: theme.accent,
               color: theme.previewBg
             }}
-            title="Profile and settings"
-            aria-label="Open profile and settings"
+            title="Open settings"
+            aria-label="Open settings"
           >
-            U
+            <SlidersHorizontal size={12} />
+            <span>Settings</span>
           </button>
         </div>
       </div>
