@@ -1,0 +1,267 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D41F00100000000010 /* GUIBagMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000020 /* GUIBagMacApp.swift */; };
+		A1B2C3D41F00100000000011 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000021 /* ContentView.swift */; };
+		A1B2C3D41F00100000000012 /* WebViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000022 /* WebViewContainer.swift */; };
+		A1B2C3D41F00100000000013 /* NativeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000023 /* NativeBridge.swift */; };
+		A1B2C3D41F00100000000014 /* ItemStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000024 /* ItemStore.swift */; };
+		A1B2C3D41F00100000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000025 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1B2C3D41F00100000000002 /* GUI Bag Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "GUI Bag Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D41F00100000000020 /* GUIBagMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GUIBagMacApp.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000022 /* WebViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewContainer.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000023 /* NativeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeBridge.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000024 /* ItemStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemStore.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1B2C3D41F00100000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1B2C3D41F00100000000003 = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D41F00100000000004 /* GUI Bag Mac */,
+				A1B2C3D41F00100000000006 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1B2C3D41F00100000000004 /* GUI Bag Mac */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D41F00100000000020 /* GUIBagMacApp.swift */,
+				A1B2C3D41F00100000000021 /* ContentView.swift */,
+				A1B2C3D41F00100000000022 /* WebViewContainer.swift */,
+				A1B2C3D41F00100000000023 /* NativeBridge.swift */,
+				A1B2C3D41F00100000000024 /* ItemStore.swift */,
+				A1B2C3D41F00100000000025 /* Assets.xcassets */,
+			);
+			path = "GUI Bag Mac";
+			sourceTree = "<group>";
+		};
+		A1B2C3D41F00100000000006 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D41F00100000000002 /* GUI Bag Mac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1B2C3D41F00100000000001 /* GUI Bag Mac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D41F00100000000030 /* Build configuration list for PBXNativeTarget "GUI Bag Mac" */;
+			buildPhases = (
+				A1B2C3D41F00100000000007 /* Sources */,
+				A1B2C3D41F00100000000005 /* Frameworks */,
+				A1B2C3D41F00100000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "GUI Bag Mac";
+			productName = "GUI Bag Mac";
+			productReference = A1B2C3D41F00100000000002 /* GUI Bag Mac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1B2C3D41F00100000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					A1B2C3D41F00100000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = A1B2C3D41F00100000000031 /* Build configuration list for PBXProject "GUI Bag Mac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1B2C3D41F00100000000003;
+			productRefGroup = A1B2C3D41F00100000000006 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1B2C3D41F00100000000001 /* GUI Bag Mac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1B2C3D41F00100000000008 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D41F00100000000015 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C3D41F00100000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D41F00100000000010 /* GUIBagMacApp.swift in Sources */,
+				A1B2C3D41F00100000000011 /* ContentView.swift in Sources */,
+				A1B2C3D41F00100000000012 /* WebViewContainer.swift in Sources */,
+				A1B2C3D41F00100000000013 /* NativeBridge.swift in Sources */,
+				A1B2C3D41F00100000000014 /* ItemStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1B2C3D41F00100000000040 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D41F00100000000041 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1B2C3D41F00100000000042 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "GUI Bag Mac";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alkicorp.guibag.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D41F00100000000043 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "GUI Bag Mac";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alkicorp.guibag.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1B2C3D41F00100000000030 /* Build configuration list for PBXNativeTarget "GUI Bag Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D41F00100000000042 /* Debug */,
+				A1B2C3D41F00100000000043 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3D41F00100000000031 /* Build configuration list for PBXProject "GUI Bag Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D41F00100000000040 /* Debug */,
+				A1B2C3D41F00100000000041 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1B2C3D41F00100000000000 /* Project object */;
+}

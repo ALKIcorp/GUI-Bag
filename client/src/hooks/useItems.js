@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { INITIAL_DATA } from '../data/initialData.js';
 import { generateDefaultName } from '../utils/nameGenerator.js';
+import { createPersistenceClient } from '../lib/persistence.js';
 
-const API_BASE = '/api/items';
+const persistence = createPersistenceClient();
 
 export function useItems() {
   const [items, setItems] = useState([]);
@@ -22,9 +23,7 @@ export function useItems() {
     const load = async () => {
       setStatus('loading');
       try {
-        const res = await fetch(API_BASE);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await persistence.listItems();
         if (!mounted) return;
         const nextItems = (data?.items?.length ? data.items : INITIAL_DATA).map(item => ({
           ...item,
@@ -60,15 +59,14 @@ export function useItems() {
     updateQueueRef.current[id] = null;
 
     try {
-      await fetch(`${API_BASE}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry.patch)
-      });
+      const response = await persistence.updateItem(id, entry.patch);
+      if (response?.item) {
+        updateItemLocal(id, response.item);
+      }
     } catch (err) {
       setError(err);
     }
-  }, []);
+  }, [updateItemLocal]);
 
   const updateItem = useCallback((id, patch) => {
     if (!id) return;
@@ -88,14 +86,7 @@ export function useItems() {
     }
 
     try {
-      const res = await fetch(API_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itemToAdd)
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await persistence.createItem(itemToAdd);
       if (data?.item) {
         setItems((prev) => [...prev, data.item]);
         setSelectedId(data.item.id);
@@ -115,8 +106,7 @@ export function useItems() {
   const removeItem = useCallback(async (id) => {
     if (!id) return false;
     try {
-      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
-      if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+      await persistence.deleteItem(id);
       removeItemLocal(id);
       return true;
     } catch (err) {

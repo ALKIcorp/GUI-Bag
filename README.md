@@ -2,11 +2,38 @@
 
 A separated React + Python stack with a tiny JSON database and a self-processing pending queue.
 
+This repo also includes a native macOS host app in [GUI Bag Mac.xcodeproj](/Volumes/ALKI%20SD/MACBOOK%20PRO%20STORAGE/ALKI%20Corp%20Dev/GUI%20Bag/GUI%20Bag%20Mac.xcodeproj) that embeds the React UI inside `WKWebView` and persists data with Swift in the user's local `Application Support` directory.
+
 **What you get**
 - React client (Vite + Tailwind)
 - Python server (stdlib only)
 - `db.json` with `nextId` auto-increment
 - `pending.json` queue that auto-flushes into the DB
+- Native macOS app host (`GUI Bag Mac`) with local JSON persistence and no iCloud dependency
+
+## macOS App (Xcode)
+
+The macOS target is a hybrid desktop app:
+- React still renders the UI.
+- `WKWebView` loads the built frontend from `client/dist`.
+- Swift replaces the Python API layer when running inside the macOS app.
+- Data is stored locally on the device in the app container under `Application Support`.
+
+### How it works
+
+1. Open [GUI Bag Mac.xcodeproj](/Volumes/ALKI%20SD/MACBOOK%20PRO%20STORAGE/ALKI%20Corp%20Dev/GUI%20Bag/GUI%20Bag%20Mac.xcodeproj) in Xcode.
+2. Build and run the `GUI Bag Mac` scheme.
+3. The Xcode build phase runs `npm run build` in `client/`.
+4. Xcode bundles `client/dist` into the app resources.
+5. The app loads `dist/index.html` into `WKWebView`.
+6. React persistence calls are routed to Swift through a native bridge instead of `/api/items`.
+
+### Native storage behavior
+
+- Storage is local-only for now.
+- No iCloud capability is enabled.
+- The Swift host persists the same core JSON shape: `schemaVersion`, `items`, `nextId`, `updatedAt`.
+- Browser development still uses the Python server and repo-local JSON files.
 
 ## Quick Start with Script (Recommended)
 
@@ -109,3 +136,4 @@ Future upgrade path (planned)
 ## Notes
 - Additions are persisted via `/api/items`.
 - Code edits are currently local-only and not persisted yet (by design for now).
+- In the macOS app, CRUD persistence is handled natively by Swift rather than the Python server.
