@@ -69,15 +69,17 @@ private struct WindowBackgroundGlass: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.blendingMode = .behindWindow
-        view.material = .underWindowBackground
+        view.material = .windowBackground
         view.state = .active
         view.isEmphasized = false
+        view.alphaValue = 0.01
         return view
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = .underWindowBackground
+        nsView.material = .windowBackground
         nsView.state = .active
+        nsView.alphaValue = 0.01
     }
 }
 
