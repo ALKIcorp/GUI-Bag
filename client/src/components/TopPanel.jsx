@@ -1,4 +1,4 @@
-export default function TopPanel({ isBooting, srcDoc, theme }) {
+export default function TopPanel({ isBooting, srcDoc, previewError, theme }) {
   return (
     <div
       className="flex-[4] border-[8px] rounded-t-[2rem] relative overflow-hidden flex flex-col"
@@ -20,7 +20,21 @@ export default function TopPanel({ isBooting, srcDoc, theme }) {
             </div>
           </div>
         ) : (
-          <iframe srcDoc={srcDoc} title="preview" sandbox="allow-scripts" className="w-full h-full border-none" />
+          <>
+            <iframe srcDoc={srcDoc} title="preview" sandbox="allow-scripts" className="w-full h-full border-none" />
+            {previewError ? (
+              <div
+                className="absolute left-3 right-3 bottom-3 rounded-lg border px-3 py-2 font-mono text-[10px] leading-relaxed shadow-xl"
+                style={{
+                  backgroundColor: `${theme.panel}F2`,
+                  borderColor: `${theme.accent2}66`,
+                  color: theme.accent2
+                }}
+              >
+                {previewError}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>

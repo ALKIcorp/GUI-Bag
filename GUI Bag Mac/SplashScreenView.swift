@@ -48,11 +48,6 @@ private struct SplashScreenView: View {
                 .interpolation(.high)
                 .scaledToFit()
                 .frame(width: 320)
-
-            Text("GUI Bag™")
-                .font(.system(size: 24, weight: .semibold, design: .rounded))
-                .tracking(0.8)
-                .foregroundStyle(.primary.opacity(0.92))
         }
         .padding(.horizontal, 36)
         .padding(.vertical, 32)

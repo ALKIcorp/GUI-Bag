@@ -7,6 +7,7 @@ export default function ConsoleWindow({
   onResizeStart,
   isBooting,
   srcDoc,
+  previewError,
   theme,
   themePresets,
   onSelectTheme,
@@ -32,7 +33,7 @@ export default function ConsoleWindow({
         color: theme.text
       }}
     >
-      <TopPanel isBooting={isBooting} srcDoc={srcDoc} theme={theme} />
+      <TopPanel isBooting={isBooting} srcDoc={srcDoc} previewError={previewError} theme={theme} />
 
       <div className="h-6 flex justify-between items-center px-16 relative z-30" style={{ backgroundColor: theme.editorBg }}>
         <div className="w-14 h-1.5 rounded-full shadow-inner" style={{ backgroundColor: theme.appBg }}></div>

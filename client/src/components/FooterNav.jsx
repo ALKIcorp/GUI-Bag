@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, ChevronLeft, Trash2, Plus, Palette, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Trash2, Plus, Check } from 'lucide-react';
 
 function ThemeMenu({ theme, themePresets, onSelectTheme, onClose }) {
   return (
@@ -121,11 +121,16 @@ export default function FooterNav({ theme, themePresets, onSelectTheme, canRemov
           <button
             type="button"
             onClick={() => setIsThemeMenuOpen((open) => !open)}
-            className="w-8 h-8 rounded-full border-2 flex items-center justify-center font-black text-[9px] italic shadow-lg"
-            style={{ backgroundColor: theme.panel2, borderColor: theme.accent, color: theme.accent }}
+            className="w-8 h-8 rounded-full border-[3px] flex items-center justify-center font-black text-[11px] italic shadow-lg"
+            style={{
+              backgroundColor: theme.accent2,
+              borderColor: theme.accent,
+              color: theme.previewBg
+            }}
             title="Profile and settings"
+            aria-label="Open profile and settings"
           >
-            <Palette size={14} />
+            U
           </button>
         </div>
       </div>
