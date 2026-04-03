@@ -304,8 +304,8 @@ private struct EditorPanel: View {
     @State private var collapsedSections: Set<EditorTab> = []
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .top, spacing: 18) {
+        VStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text((currentItem?.name ?? "NO_ITEM").uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -320,15 +320,16 @@ private struct EditorPanel: View {
                         .foregroundStyle(ConsoleTheme.textSecondary)
                         .lineLimit(1)
                 }
-                .frame(width: 132, alignment: .leading)
+                .frame(width: 118, alignment: .leading)
 
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     ForEach(EditorTab.allCases) { tab in
                         TabButton(tab: tab, isSelected: activeTab == tab) {
                             activeTab = tab
                         }
                     }
                 }
+                .padding(.top, 1)
 
                 Spacer(minLength: 0)
 
@@ -336,10 +337,12 @@ private struct EditorPanel: View {
                     .font(.system(size: 8, weight: .black, design: .monospaced))
                     .tracking(1.8)
                     .foregroundStyle(ConsoleTheme.accentPink.opacity(0.8))
-                    .padding(.top, 4)
+                    .padding(.top, 3)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 12)
+            .padding(.trailing, 14)
+            .padding(.top, 4)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -385,12 +388,12 @@ private struct EditorPanel: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 2)
             .padding(.bottom, 4)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
     }
 }
 
@@ -512,12 +515,12 @@ private struct TabButton: View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: tab.iconName)
-                    .font(.system(size: 16, weight: .black))
+                    .font(.system(size: 14, weight: .black))
                 Text(tab.title)
                     .font(.system(size: 7, weight: .black, design: .rounded))
                     .tracking(0.8)
             }
-            .frame(width: 46, height: 46)
+            .frame(width: 40, height: 40)
             .foregroundStyle(isSelected ? ConsoleTheme.bottomRed : ConsoleTheme.textPrimary)
             .background(isSelected ? ConsoleTheme.selectedLight : ConsoleTheme.topRed.opacity(0.35))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
