@@ -16,3 +16,11 @@ cd ..
 xcodebuild -project "GUI Bag Mac.xcodeproj" -scheme "GUI Bag Mac" -configuration Debug -derivedDataPath /tmp/gui-bag-derived build
 open "/tmp/gui-bag-derived/Build/Products/Debug/GUI Bag Mac.app"
 '''
+
+[[actions]]
+name = "Runtime"
+icon = "tool"
+command = '''
+xcodebuild -project 'GUI Bag Mac.xcodeproj' -scheme 'GUI Bag Mac' -sdk macosx -derivedDataPath /tmp/gui-bag-derived build
+open '/tmp/gui-bag-derived/Build/Products/Debug/GUI Bag Mac.app'
+'''

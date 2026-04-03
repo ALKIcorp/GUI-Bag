@@ -1,7 +1,7 @@
 import SwiftUI
 import WebKit
 
-struct PreviewWebView: NSViewRepresentable {
+struct CanvasRendererView: NSViewRepresentable {
     let html: String
     let zoomScale: CGFloat
 
@@ -32,11 +32,11 @@ struct PreviewWebView: NSViewRepresentable {
         var zoomScale: CGFloat = 1
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            NSLog("Preview navigation failed: %@", error.localizedDescription)
+            NSLog("Canvas render failed: %@", error.localizedDescription)
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            NSLog("Preview provisional navigation failed: %@", error.localizedDescription)
+            NSLog("Canvas render startup failed: %@", error.localizedDescription)
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

@@ -187,7 +187,7 @@ private struct ConsoleWindow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PreviewSection(model: model, theme: theme, onAdd: onAdd)
+            CanvasSection(model: model, theme: theme, onAdd: onAdd)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: .infinity)
 
@@ -208,11 +208,11 @@ private struct ConsoleWindow: View {
     }
 }
 
-private struct PreviewSection: View {
+private struct CanvasSection: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
     let onAdd: () -> Void
-    @State private var isShowingExpandedPreview = false
+    @State private var isShowingExpandedCanvas = false
 
     var body: some View {
         ZStack {
@@ -221,12 +221,11 @@ private struct PreviewSection: View {
             DotPatternOverlay()
                 .opacity(0.10)
 
-            PreviewWorkspace(
+            CanvasWorkspace(
                 model: model,
                 theme: theme,
-                onAdd: onAdd,
                 showsExpandControl: true,
-                onExpand: { isShowingExpandedPreview = true }
+                onExpand: { isShowingExpandedCanvas = true }
             )
                 .padding(24)
         }
@@ -235,8 +234,8 @@ private struct PreviewSection: View {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
         )
-        .sheet(isPresented: $isShowingExpandedPreview) {
-            ExpandedPreviewSheet(model: model, theme: theme)
+        .sheet(isPresented: $isShowingExpandedCanvas) {
+            ExpandedCanvasSheet(model: model, theme: theme)
         }
     }
 }
@@ -261,19 +260,17 @@ private struct DotPatternOverlay: View {
     }
 }
 
-private struct PreviewWorkspace: View {
+private struct CanvasWorkspace: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
-    let onAdd: () -> Void
     let showsExpandControl: Bool
     let onExpand: () -> Void
 
     var body: some View {
         VStack(spacing: 18) {
-            PreviewToolbar(
+            CanvasToolbar(
                 model: model,
                 theme: theme,
-                onAdd: onAdd,
                 showsExpandControl: showsExpandControl,
                 onExpand: onExpand
             )
@@ -287,15 +284,15 @@ private struct PreviewWorkspace: View {
 
                     ConsoleEmptyState(
                         theme: theme,
-                        title: "LINK OFFLINE",
-                        message: "Add an item to render the preview frame."
+                        title: "NO CANVAS",
+                        message: "Add a tab to open a design canvas."
                     )
                 }
             } else {
-                PreviewCanvasCard(
-                    item: model.activePreviewItem ?? model.items[0],
+                CanvasCard(
+                    item: model.currentItem ?? model.items[0],
                     theme: theme,
-                    zoomScale: model.previewZoom,
+                    zoomScale: model.canvasZoom,
                     isActive: true
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -305,7 +302,7 @@ private struct PreviewWorkspace: View {
     }
 }
 
-private func makePreviewHTML(for item: StoredItem, theme: ConsoleThemePreset) -> String {
+private func makeCanvasHTML(for item: StoredItem, theme: ConsoleThemePreset) -> String {
     return """
     <!DOCTYPE html>
     <html>
@@ -338,40 +335,53 @@ private func makePreviewHTML(for item: StoredItem, theme: ConsoleThemePreset) ->
     """
 }
 
-private struct PreviewToolbar: View {
+private struct CanvasToolbar: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
-    let onAdd: () -> Void
     let showsExpandControl: Bool
     let onExpand: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(model.items) { item in
-                        PreviewTabButton(
-                            item: item,
-                            theme: theme,
-                            isSelected: model.activePreviewID == item.id
-                        ) {
-                            model.selectPreview(id: item.id)
+        HStack(alignment: .center, spacing: 12) {
+            HStack(spacing: 10) {
+                GlassTabRail(theme: theme) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(model.openTabs) { item in
+                                CanvasTabButton(
+                                    item: item,
+                                    theme: theme,
+                                    isSelected: model.selectedID == item.id
+                                ) {
+                                    model.selectTab(id: item.id)
+                                }
+                            }
                         }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
                     }
-
-                    PreviewAddTabButton(theme: theme, action: onAdd)
                 }
-                .padding(.vertical, 2)
+                .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+                .layoutPriority(1)
+
+                CanvasAddTabButton(theme: theme) {
+                    model.addItem()
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            PreviewControlCluster(theme: theme, model: model, showsExpandControl: showsExpandControl, onExpand: onExpand)
+            Rectangle()
+                .fill(theme.text.opacity(0.08))
+                .frame(width: 1, height: 30)
+
+            CanvasControlCluster(theme: theme, model: model, showsExpandControl: showsExpandControl, onExpand: onExpand)
                 .fixedSize()
+                .layoutPriority(1)
         }
     }
 }
 
-private struct PreviewCanvasCard: View {
+private struct CanvasCard: View {
     let item: StoredItem
     let theme: ConsoleThemePreset
     let zoomScale: CGFloat
@@ -379,13 +389,13 @@ private struct PreviewCanvasCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PreviewChrome(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
+            CanvasHeader(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(theme.previewBg)
 
-                PreviewWebView(html: makePreviewHTML(for: item, theme: theme), zoomScale: zoomScale)
+                CanvasRendererView(html: makeCanvasHTML(for: item, theme: theme), zoomScale: zoomScale)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .padding(8)
             }
@@ -401,7 +411,7 @@ private struct PreviewCanvasCard: View {
     }
 }
 
-private struct PreviewChrome: View {
+private struct CanvasHeader: View {
     let theme: ConsoleThemePreset
     let item: StoredItem
     let isActive: Bool
@@ -409,11 +419,11 @@ private struct PreviewChrome: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Circle().fill(Color.red.opacity(0.9)).frame(width: 10, height: 10)
-                Circle().fill(Color.yellow.opacity(0.9)).frame(width: 10, height: 10)
-                Circle().fill(Color.green.opacity(0.9)).frame(width: 10, height: 10)
-            }
+            Image(systemName: "rectangle.on.rectangle")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(theme.accent2)
+                .frame(width: 24, height: 24)
+                .background(theme.accent2.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
@@ -421,7 +431,7 @@ private struct PreviewChrome: View {
                     .foregroundStyle(theme.textPrimary)
                     .lineLimit(1)
 
-                Text("Live Preview • \(Int(zoomScale * 100))%")
+                Text("Canvas • \(Int(zoomScale * 100))%")
                     .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundStyle(theme.textSecondary)
                     .lineLimit(1)
@@ -441,7 +451,7 @@ private struct PreviewChrome: View {
     }
 }
 
-private struct PreviewControlCluster: View {
+private struct CanvasControlCluster: View {
     let theme: ConsoleThemePreset
     @ObservedObject var model: AppModel
     let showsExpandControl: Bool
@@ -449,7 +459,7 @@ private struct PreviewControlCluster: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            PreviewPill(theme: theme) {
+            GlassTabAccessory(theme: theme) {
                 HStack(spacing: 8) {
                     Button(action: model.zoomOut) {
                         Image(systemName: "minus.magnifyingglass")
@@ -457,13 +467,13 @@ private struct PreviewControlCluster: View {
                     .buttonStyle(.plain)
 
                     Menu {
-                        ForEach(PreviewZoomPreset.allCases) { preset in
+                        ForEach(CanvasZoomPreset.allCases) { preset in
                             Button(preset.title) {
-                                model.previewZoom = preset.scale
+                                model.canvasZoom = preset.scale
                             }
                         }
                     } label: {
-                        Text("\(Int(model.previewZoom * 100))%")
+                        Text("\(Int(model.canvasZoom * 100))%")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .frame(minWidth: 42)
                     }
@@ -480,7 +490,7 @@ private struct PreviewControlCluster: View {
             }
 
             if showsExpandControl {
-                PreviewPill(theme: theme) {
+                GlassTabAccessory(theme: theme) {
                     Button(action: onExpand) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                             .font(.system(size: 12, weight: .bold))
@@ -494,13 +504,13 @@ private struct PreviewControlCluster: View {
     }
 }
 
-private struct PreviewAddTabButton: View {
+private struct CanvasAddTabButton: View {
     let theme: ConsoleThemePreset
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            PreviewPill(theme: theme, prominence: 0.14) {
+            GlassTabAccessory(theme: theme, prominence: 0.14) {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(theme.textSecondary)
@@ -511,7 +521,39 @@ private struct PreviewAddTabButton: View {
     }
 }
 
-private struct PreviewTabButton: View {
+private struct GlassTabRail<Content: View>: View {
+    let theme: ConsoleThemePreset
+    let content: Content
+
+    init(theme: ConsoleThemePreset, @ViewBuilder content: () -> Content) {
+        self.theme = theme
+        self.content = content()
+    }
+
+    var body: some View {
+        if #available(macOS 26.0, *) {
+            content
+                .glassEffect(
+                    .regular
+                        .tint(theme.accent.opacity(0.10)),
+                    in: .rect(cornerRadius: 20)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(theme.text.opacity(0.08), lineWidth: 1)
+                )
+        } else {
+            content
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(theme.text.opacity(0.08), lineWidth: 1)
+                )
+        }
+    }
+}
+
+private struct CanvasTabButton: View {
     let item: StoredItem
     let theme: ConsoleThemePreset
     let isSelected: Bool
@@ -519,31 +561,50 @@ private struct PreviewTabButton: View {
 
     var body: some View {
         Button(action: action) {
-            PreviewPill(theme: theme, prominence: isSelected ? 0.30 : 0.16) {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(isSelected ? theme.accent2 : theme.textSecondary.opacity(0.75))
-                        .frame(width: 7, height: 7)
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(isSelected ? theme.accent2 : theme.textSecondary.opacity(0.35))
+                    .frame(width: 6, height: 6)
 
-                    Text(item.name)
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
+                Text(item.name)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium, design: .rounded))
+                    .truncationMode(.tail)
+                    .lineLimit(1)
 
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 9, weight: .black))
-                    }
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .black))
                 }
-                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
             }
+            .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary.opacity(0.82))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(backgroundShape)
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: 220)
+        .zIndex(isSelected ? 1 : 0)
+    }
+
+    @ViewBuilder
+    private var backgroundShape: some View {
+        if isSelected {
+            GlassTabAccessory(theme: theme, prominence: 0.30) {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        } else {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.black.opacity(0.10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(theme.text.opacity(0.05), lineWidth: 1)
+                )
+        }
     }
 }
 
-private struct PreviewPill<Content: View>: View {
+private struct GlassTabAccessory<Content: View>: View {
     let theme: ConsoleThemePreset
     var prominence: Double = 0.18
     let content: Content
@@ -575,7 +636,7 @@ private struct PreviewPill<Content: View>: View {
     }
 }
 
-private struct ExpandedPreviewSheet: View {
+private struct ExpandedCanvasSheet: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
     @Environment(\.dismiss) private var dismiss
@@ -594,20 +655,18 @@ private struct ExpandedPreviewSheet: View {
 
             VStack(spacing: 18) {
                 HStack {
-                    Text("EXPANDED LIVE PREVIEW")
+                    Text("EXPANDED CANVAS")
                         .font(.system(size: 12, weight: .black, design: .rounded))
                         .tracking(1.6)
                         .foregroundStyle(theme.textPrimary)
-
                     Spacer()
-
                     Button("Close") {
                         dismiss()
                     }
                     .buttonStyle(.borderedProminent)
                 }
 
-                PreviewWorkspace(model: model, theme: theme, onAdd: {}, showsExpandControl: false, onExpand: {})
+                CanvasWorkspace(model: model, theme: theme, showsExpandControl: false, onExpand: {})
             }
             .padding(24)
         }
@@ -1529,7 +1588,7 @@ enum EditorTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum PreviewZoomPreset: CGFloat, CaseIterable, Identifiable {
+enum CanvasZoomPreset: CGFloat, CaseIterable, Identifiable {
     case fifty = 0.5
     case seventyFive = 0.75
     case oneHundred = 1.0
@@ -1550,18 +1609,13 @@ final class AppModel: ObservableObject {
     @Published var items: [StoredItem] = []
     @Published var selectedID: String? {
         didSet {
-            guard selectedID != oldValue, activePreviewID != selectedID else { return }
-            activePreviewID = selectedID
+            guard selectedID != oldValue else { return }
+            syncOpenTabs(previousSelectedID: oldValue, newSelectedID: selectedID)
         }
     }
+    @Published private(set) var openTabIDs: [String] = []
     @Published var activeTab: EditorTab = .html
-    @Published var activePreviewID: String? {
-        didSet {
-            guard activePreviewID != oldValue, selectedID != activePreviewID else { return }
-            selectedID = activePreviewID
-        }
-    }
-    @Published var previewZoom: CGFloat = PreviewZoomPreset.oneHundred.scale
+    @Published var canvasZoom: CGFloat = CanvasZoomPreset.oneHundred.scale
     @Published var statusText = "Ready"
 
     private let store: ItemStore
@@ -1577,8 +1631,10 @@ final class AppModel: ObservableObject {
         items.first(where: { $0.id == selectedID }) ?? items.first
     }
 
-    var activePreviewItem: StoredItem? {
-        items.first(where: { $0.id == activePreviewID }) ?? currentItem
+    var openTabs: [StoredItem] {
+        openTabIDs.compactMap { id in
+            items.first(where: { $0.id == id })
+        }
     }
 
     init() {
@@ -1622,8 +1678,8 @@ final class AppModel: ObservableObject {
                 )
             )
             items.append(item)
+            openTabIDs.append(item.id)
             selectedID = item.id
-            activePreviewID = item.id
             statusText = "Added \(item.name)"
         } catch {
             statusText = error.localizedDescription
@@ -1636,8 +1692,11 @@ final class AppModel: ObservableObject {
         do {
             try store.deleteStoredItem(id: id)
             items.removeAll { $0.id == id }
-            selectedID = items.first?.id
-            activePreviewID = selectedID
+            openTabIDs.removeAll { $0 == id }
+            if openTabIDs.isEmpty, let firstID = items.first?.id {
+                openTabIDs = [firstID]
+            }
+            selectedID = openTabIDs.first ?? items.first?.id
             statusText = "Deleted item"
         } catch {
             statusText = error.localizedDescription
@@ -1698,8 +1757,9 @@ final class AppModel: ObservableObject {
         do {
             let importedItems = try store.importBackup(from: url)
             items = try store.loadItems()
-            selectedID = importedItems.last?.id ?? items.first?.id
-            activePreviewID = selectedID
+            let initialID = importedItems.last?.id ?? items.first?.id
+            openTabIDs = initialID.map { [$0] } ?? []
+            selectedID = initialID
             statusText = importedItems.isEmpty ? "Backup loaded" : "Imported \(importedItems.count) items"
         } catch {
             statusText = error.localizedDescription
@@ -1784,16 +1844,39 @@ final class AppModel: ObservableObject {
     private func reload() {
         do {
             items = try store.loadItems()
-            selectedID = items.first?.id
-            activePreviewID = selectedID
+            let firstID = items.first?.id
+            openTabIDs = firstID.map { [$0] } ?? []
+            selectedID = firstID
         } catch {
             statusText = error.localizedDescription
         }
     }
 
-    func selectPreview(id: String) {
-        guard items.contains(where: { $0.id == id }) else { return }
-        activePreviewID = id
+    func selectTab(id: String) {
+        guard openTabIDs.contains(id) else { return }
+        selectedID = id
+    }
+
+    private func syncOpenTabs(previousSelectedID: String?, newSelectedID: String?) {
+        guard let newSelectedID else { return }
+
+        if openTabIDs.contains(newSelectedID) {
+            return
+        }
+
+        if openTabIDs.isEmpty {
+            openTabIDs = [newSelectedID]
+            return
+        }
+
+        if let previousSelectedID, let index = openTabIDs.firstIndex(of: previousSelectedID) {
+            openTabIDs[index] = newSelectedID
+        } else {
+            openTabIDs = [newSelectedID]
+        }
+
+        var seen = Set<String>()
+        openTabIDs = openTabIDs.filter { seen.insert($0).inserted }
     }
 
     func zoomIn() {
@@ -1805,15 +1888,15 @@ final class AppModel: ObservableObject {
     }
 
     private func setZoom(_ scale: CGFloat) {
-        previewZoom = min(max(scale, PreviewZoomPreset.allCases.first?.scale ?? 0.5), PreviewZoomPreset.allCases.last?.scale ?? 2.0)
+        canvasZoom = min(max(scale, CanvasZoomPreset.allCases.first?.scale ?? 0.5), CanvasZoomPreset.allCases.last?.scale ?? 2.0)
     }
 
     private func nextZoom(increasing: Bool) -> CGFloat {
-        let presets = PreviewZoomPreset.allCases.map(\.scale)
+        let presets = CanvasZoomPreset.allCases.map(\.scale)
         if increasing {
-            return presets.first(where: { $0 > previewZoom + 0.001 }) ?? previewZoom
+            return presets.first(where: { $0 > canvasZoom + 0.001 }) ?? canvasZoom
         }
-        return presets.last(where: { $0 < previewZoom - 0.001 }) ?? previewZoom
+        return presets.last(where: { $0 < canvasZoom - 0.001 }) ?? canvasZoom
     }
 
     func nextDefaultName() -> String {
