@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct LaunchRootView: View {
@@ -36,30 +35,28 @@ struct LaunchRootView: View {
 
 private struct SplashScreenView: View {
     var body: some View {
-        VStack(spacing: 18) {
-            if let appIcon = NSApp.applicationIconImage {
-                Image(nsImage: appIcon)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: 88, height: 88)
-                    .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 10)
-            }
+        VStack(spacing: 24) {
+            Image("GUIBagSplashIcon")
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                .frame(width: 118, height: 118)
+                .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
 
             Image("GUIBagTextLogo")
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-                .frame(width: 250)
+                .frame(width: 320)
 
             Text("GUI Bag™")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                .tracking(0.6)
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .tracking(0.8)
                 .foregroundStyle(.primary.opacity(0.92))
         }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 24)
-        .frame(width: 440, height: 280)
+        .padding(.horizontal, 36)
+        .padding(.vertical, 32)
+        .frame(width: 560, height: 360)
         .background(Color.clear)
     }
 }
@@ -104,8 +101,8 @@ private struct LaunchWindowConfigurator: NSViewRepresentable {
             window.standardWindowButton(.closeButton)?.isHidden = true
             window.standardWindowButton(.miniaturizeButton)?.isHidden = true
             window.standardWindowButton(.zoomButton)?.isHidden = true
-            window.setContentSize(NSSize(width: 440, height: 280))
-            window.minSize = NSSize(width: 440, height: 280)
+            window.setContentSize(NSSize(width: 560, height: 360))
+            window.minSize = NSSize(width: 560, height: 360)
             window.center()
         case .main:
             window.hasShadow = true
