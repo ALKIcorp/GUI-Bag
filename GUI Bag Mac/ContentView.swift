@@ -305,16 +305,7 @@ private struct EditorPanel: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 10) {
-                ForEach(EditorTab.allCases) { tab in
-                    TabButton(tab: tab, isSelected: activeTab == tab) {
-                        activeTab = tab
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-
-            HStack {
+            HStack(alignment: .top, spacing: 18) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text((currentItem?.name ?? "NO_ITEM").uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -329,15 +320,26 @@ private struct EditorPanel: View {
                         .foregroundStyle(ConsoleTheme.textSecondary)
                         .lineLimit(1)
                 }
+                .frame(width: 132, alignment: .leading)
 
-                Spacer()
+                HStack(spacing: 10) {
+                    ForEach(EditorTab.allCases) { tab in
+                        TabButton(tab: tab, isSelected: activeTab == tab) {
+                            activeTab = tab
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
 
                 Text(statusText.uppercased())
                     .font(.system(size: 8, weight: .black, design: .monospaced))
                     .tracking(1.8)
                     .foregroundStyle(ConsoleTheme.accentPink.opacity(0.8))
+                    .padding(.top, 4)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 18)
+            .padding(.top, 8)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -382,8 +384,13 @@ private struct EditorPanel: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, 4)
+            .padding(.bottom, 4)
         }
-        .padding(14)
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
     }
 }
 
