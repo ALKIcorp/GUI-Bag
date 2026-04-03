@@ -12,6 +12,9 @@ struct ContentView: View {
                 WindowBackgroundGlass()
                     .ignoresSafeArea()
 
+                Color.black.opacity(0.06)
+                    .ignoresSafeArea()
+
                 ConsoleWindow(
                     model: model,
                     onAdd: {
@@ -69,17 +72,17 @@ private struct WindowBackgroundGlass: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.blendingMode = .behindWindow
-        view.material = .windowBackground
+        view.material = .underWindowBackground
         view.state = .active
         view.isEmphasized = false
-        view.alphaValue = 0.01
+        view.alphaValue = 0.24
         return view
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = .windowBackground
+        nsView.material = .underWindowBackground
         nsView.state = .active
-        nsView.alphaValue = 0.01
+        nsView.alphaValue = 0.24
     }
 }
 
@@ -203,10 +206,6 @@ private struct PreviewFrame: View {
 }
 
 private func makePreviewHTML(for item: StoredItem) -> String {
-    if let all = item.all, !all.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        return all
-    }
-
     return """
     <!DOCTYPE html>
     <html>
@@ -302,6 +301,7 @@ private struct EditorPanel: View {
     @Binding var activeTab: EditorTab
     let code: (EditorTab) -> Binding<String>
     let statusText: String
+    @State private var collapsedSections: Set<EditorTab> = []
 
     var body: some View {
         VStack(spacing: 12) {
@@ -369,6 +369,8 @@ private struct EditorPanel: View {
                             message: "Select an item to edit HTML, CSS, JS, or ALL."
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if activeTab == .all {
+                        AllTabEditor(code: code, collapsedSections: $collapsedSections)
                     } else {
                         TextEditor(text: code(activeTab))
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
@@ -382,6 +384,115 @@ private struct EditorPanel: View {
             }
         }
         .padding(14)
+    }
+}
+
+private struct AllTabEditor: View {
+    let code: (EditorTab) -> Binding<String>
+    @Binding var collapsedSections: Set<EditorTab>
+
+    private let tabs: [EditorTab] = [.html, .css, .js]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(tabs) { tab in
+                    EditorSectionCard(
+                        tab: tab,
+                        text: code(tab),
+                        isCollapsed: collapsedSections.contains(tab),
+                        toggle: { toggle(tab) }
+                    )
+                }
+            }
+            .padding(12)
+        }
+        .background(ConsoleTheme.panelDeep.opacity(0.001))
+    }
+
+    private func toggle(_ tab: EditorTab) {
+        if collapsedSections.contains(tab) {
+            collapsedSections.remove(tab)
+        } else {
+            collapsedSections.insert(tab)
+        }
+    }
+}
+
+private struct EditorSectionCard: View {
+    let tab: EditorTab
+    @Binding var text: String
+    let isCollapsed: Bool
+    let toggle: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: toggle) {
+                HStack(spacing: 8) {
+                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(ConsoleTheme.textSecondary)
+
+                    Text(sectionTitle)
+                        .font(.system(size: 9, weight: .black, design: .monospaced))
+                        .tracking(1.8)
+                        .foregroundStyle(sectionColor)
+
+                    Spacer()
+
+                    Text(isCollapsed ? "EXPAND" : "MINIMIZE")
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .tracking(1.4)
+                        .foregroundStyle(ConsoleTheme.textSecondary.opacity(0.8))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(ConsoleTheme.panel)
+            }
+            .buttonStyle(.plain)
+
+            if !isCollapsed {
+                TextEditor(text: $text)
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .foregroundStyle(sectionColor)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 150)
+                    .padding(12)
+                    .background(ConsoleTheme.panelDeep.opacity(0.001))
+            }
+        }
+        .background(ConsoleTheme.panel.opacity(0.45))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var sectionTitle: String {
+        switch tab {
+        case .html:
+            return "HTML"
+        case .css:
+            return "CSS"
+        case .js:
+            return "JAVASCRIPT"
+        case .all:
+            return "ALL"
+        }
+    }
+
+    private var sectionColor: Color {
+        switch tab {
+        case .html:
+            return ConsoleTheme.accentPink
+        case .css:
+            return Color.cyan.opacity(0.9)
+        case .js:
+            return Color.orange.opacity(0.9)
+        case .all:
+            return ConsoleTheme.textPrimary
+        }
     }
 }
 
@@ -894,7 +1005,7 @@ final class AppModel: ObservableObject {
                 case .js:
                     return item.js
                 case .all:
-                    return item.all ?? ""
+                    return ""
                 }
             },
             set: { [self] in updateCurrentCode(tab: tab, value: $0) }
@@ -910,7 +1021,7 @@ final class AppModel: ObservableObject {
                     html: "",
                     css: "",
                     js: "",
-                    all: ""
+                    all: nil
                 )
             )
             items.append(item)
@@ -957,7 +1068,7 @@ final class AppModel: ObservableObject {
         case .js:
             updateSelectedField("js", value: value)
         case .all:
-            updateSelectedField("all", value: value)
+            break
         }
     }
 

@@ -25,10 +25,7 @@ export function useItems() {
       try {
         const data = await persistence.listItems();
         if (!mounted) return;
-        const nextItems = (data?.items?.length ? data.items : INITIAL_DATA).map(item => ({
-          ...item,
-          all: item.all ?? '' // Ensure 'all' property exists
-        }));
+        const nextItems = data?.items?.length ? data.items : INITIAL_DATA;
         setItems(nextItems);
         setSelectedId(nextItems[0]?.id ?? null);
         setStatus('ready');
@@ -80,7 +77,7 @@ export function useItems() {
   }, [flushUpdate, updateItemLocal]);
 
   const addItem = useCallback(async (payload) => {
-    const itemToAdd = { all: '', ...payload }; // Ensure 'all' is always present
+    const itemToAdd = { ...payload };
     if (!itemToAdd.name) {
       itemToAdd.name = generateDefaultName(items);
     }

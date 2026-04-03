@@ -7,8 +7,8 @@ import { useItems } from './hooks/useItems.js';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('html');
-  const [showAddItemModal, setShowAddItemModal] = useState(false); // State for modal visibility
-  const [refreshKey, setRefreshKey] = useState(0); // State to force iframe refresh
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const isBooting = useBoot(600);
   const { size, startResize } = useResize();
   const {
@@ -24,12 +24,6 @@ export default function App() {
   const srcDoc = useMemo(() => {
     if (!currentItem) return '';
 
-    // If 'all' code is present, use only that.
-    if (currentItem.all && currentItem.all.trim() !== '') {
-      return currentItem.all;
-    }
-
-    // Otherwise, combine html, css, and js.
     return `
       <!DOCTYPE html>
       <html>
@@ -45,7 +39,7 @@ export default function App() {
         </body>
       </html>
     `;
-  }, [currentItem, refreshKey]); // Add refreshKey as a dependency
+  }, [currentItem, refreshKey]);
 
   const handleUpdateCode = (type, value) => {
     if (!selectedId) return;
@@ -54,16 +48,15 @@ export default function App() {
 
   const handleSaveItem = () => {
     if (!selectedId || !currentItem) return;
-    updateItem(selectedId, currentItem); // Persist currentItem's state
+    updateItem(selectedId, currentItem);
     console.log('Item saved:', currentItem.name);
   };
 
   const handleRefreshDisplay = () => {
-    setRefreshKey(prevKey => prevKey + 1); // Increment key to force re-render of iframe
+    setRefreshKey(prevKey => prevKey + 1);
     console.log('Display refreshed.');
   };
 
-  // Modified handleAddItem to accept a payload directly from the modal
   const handleAddItem = async (itemName) => {
     console.log('handleAddItem called with itemName:', itemName);
     const item = await addItem({
@@ -71,8 +64,7 @@ export default function App() {
       type: 'UI',
       html: '',
       css: '',
-      js: '',
-      all: ''
+      js: ''
     });
 
     if (!item) {
@@ -81,7 +73,7 @@ export default function App() {
     }
 
     console.log('Item added successfully:', item);
-    setShowAddItemModal(false); // Close modal on successful addition
+    setShowAddItemModal(false);
   };
 
   const handleRemoveItem = async () => {
@@ -106,13 +98,12 @@ export default function App() {
         selectedId={selectedId}
         onSelectItem={setSelectedId}
         onUpdateCode={handleUpdateCode}
-        onAddItem={() => setShowAddItemModal(true)} // Open modal when add is clicked
+        onAddItem={() => setShowAddItemModal(true)}
         onRemoveItem={handleRemoveItem}
         onUpdateItem={updateItem}
-        onSave={handleSaveItem} // Pass save handler
-        onRefreshDisplay={handleRefreshDisplay} // Pass refresh handler
+        onSave={handleSaveItem}
+        onRefreshDisplay={handleRefreshDisplay}
       />
-      {/* Render the AddItemModal */}
       <AddItemModal
         isOpen={showAddItemModal}
         onClose={() => setShowAddItemModal(false)}

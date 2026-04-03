@@ -22,6 +22,8 @@ export default function BottomPanel({
           onChangeTab={onChangeTab}
           value={currentItem?.[activeTab]}
           onChange={(value) => onUpdateCode(activeTab, value)}
+          currentItem={currentItem}
+          onChangeCode={onUpdateCode}
         />
 
         <ItemList items={items} selectedId={selectedId} onSelect={onSelectItem} onUpdateItem={onUpdateItem} />
