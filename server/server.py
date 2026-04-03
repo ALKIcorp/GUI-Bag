@@ -97,7 +97,8 @@ def process_pending_forever(interval_seconds=2):
         pending = load_json(PENDING_PATH, {"items": []})
         if pending.get('items'):
           db = ensure_schema(load_json(DB_PATH, {"schemaVersion": SCHEMA_VERSION, "nextId": 1, "updatedAt": utc_now(), "items": []}))
-          db['items'].extend(pending['items'])
+          existing_ids = {str(item.get('id')) for item in db.get('items', [])}
+          db['items'].extend(item for item in pending['items'] if str(item.get('id')) not in existing_ids)
           db['updatedAt'] = utc_now()
           save_json(DB_PATH, db)
           save_json(PENDING_PATH, {"items": []})
@@ -183,19 +184,14 @@ class AlkiHandler(SimpleHTTPRequestHandler):
         db = ensure_schema(load_json(DB_PATH, {"schemaVersion": SCHEMA_VERSION, "nextId": 1, "updatedAt": utc_now(), "items": []}))
         # Explicitly ensure nextId is an integer after loading
         db['nextId'] = int(db.get('nextId', 1))
-
-        pending = load_json(PENDING_PATH, {"items": []})
         item_id = str(db['nextId'])
         db['nextId'] += 1
         db['updatedAt'] = utc_now()
         item['id'] = item_id
-        pending.setdefault('items', []).append(item)
-        print(f"Saving DB with nextId: {db['nextId']}") # Added log
+        db.setdefault('items', []).append(item)
         save_json(DB_PATH, db)
-        save_json(PENDING_PATH, pending)
 
       self._set_headers(HTTPStatus.CREATED)
-      print(f"Returning item: {item}") # Added log
       self.wfile.write(json.dumps({"item": item}).encode('utf-8'))
     except Exception as e:
       print(f"Error in do_POST: {e}")

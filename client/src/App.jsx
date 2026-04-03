@@ -91,9 +91,12 @@ export default function App() {
 
   const handleRemoveItem = async () => {
     if (!selectedId || items.length <= 1) return;
+    const removedIndex = items.findIndex((item) => item.id === selectedId);
     const removed = await removeItem(selectedId);
     if (!removed) return;
-    const next = items.find((item) => item.id !== selectedId);
+
+    const remainingItems = items.filter((item) => item.id !== selectedId);
+    const next = remainingItems[removedIndex] ?? remainingItems[removedIndex - 1] ?? remainingItems[0];
     if (next) setSelectedId(next.id);
   };
 

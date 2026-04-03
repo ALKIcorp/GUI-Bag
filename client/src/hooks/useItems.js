@@ -10,7 +10,12 @@ export function useItems() {
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const itemsRef = useRef([]);
   const updateQueueRef = useRef({});
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const currentItem = useMemo(() => {
     if (!items.length) return null;
@@ -79,13 +84,19 @@ export function useItems() {
   const addItem = useCallback(async (payload) => {
     const itemToAdd = { ...payload };
     if (!itemToAdd.name) {
-      itemToAdd.name = generateDefaultName(items);
+      itemToAdd.name = generateDefaultName(itemsRef.current);
     }
 
     try {
       const data = await persistence.createItem(itemToAdd);
       if (data?.item) {
-        setItems((prev) => [...prev, data.item]);
+        setItems((prev) => {
+          if (prev.some((item) => item.id === data.item.id)) {
+            return prev.map((item) => (item.id === data.item.id ? data.item : item));
+          }
+
+          return [...prev, data.item];
+        });
         setSelectedId(data.item.id);
         return data.item;
       }
@@ -94,7 +105,7 @@ export function useItems() {
     }
 
     return null;
-  }, [items]);
+  }, []);
 
   const removeItemLocal = useCallback((id) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
