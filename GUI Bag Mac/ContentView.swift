@@ -826,8 +826,8 @@ private struct EditorPanel: View {
     @State private var collapsedSections: Set<EditorTab> = []
 
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text((currentItem?.name ?? "NO_ITEM").uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -842,29 +842,31 @@ private struct EditorPanel: View {
                         .foregroundStyle(theme.textSecondary)
                         .lineLimit(1)
                 }
-                .frame(width: 118, alignment: .leading)
+                .layoutPriority(1)
 
-                HStack(spacing: 8) {
-                    ForEach(EditorTab.allCases) { tab in
-                        TabButton(theme: theme, tab: tab, isSelected: activeTab == tab) {
-                            activeTab = tab
+                Spacer(minLength: 8)
+
+                HStack(alignment: .top, spacing: 8) {
+                    HStack(spacing: 6) {
+                        ForEach(EditorTab.allCases) { tab in
+                            TabButton(theme: theme, tab: tab, isSelected: activeTab == tab) {
+                                activeTab = tab
+                            }
                         }
                     }
+
+                    Text(statusText.uppercased())
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .tracking(1.6)
+                        .foregroundStyle(theme.accentPink.opacity(0.8))
+                        .padding(.top, 2)
+                        .padding(.leading, 6)
                 }
-                .padding(.top, 1)
-
-                Spacer(minLength: 0)
-
-                Text(statusText.uppercased())
-                    .font(.system(size: 8, weight: .black, design: .monospaced))
-                    .tracking(1.8)
-                    .foregroundStyle(theme.accentPink.opacity(0.8))
-                    .padding(.top, 3)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
             .padding(.leading, 12)
-            .padding(.trailing, 14)
-            .padding(.top, 4)
+            .padding(.trailing, 12)
+            .padding(.top, 1)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -916,7 +918,7 @@ private struct EditorPanel: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, 12)
-        .padding(.top, 10)
+        .padding(.top, 7)
         .padding(.bottom, 10)
     }
 }
@@ -1043,21 +1045,21 @@ private struct TabButton: View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: tab.iconName)
-                    .font(.system(size: 14, weight: .black))
+                    .font(.system(size: 12, weight: .black))
                 Text(tab.title)
-                    .font(.system(size: 7, weight: .black, design: .rounded))
-                    .tracking(0.8)
+                    .font(.system(size: 6, weight: .black, design: .rounded))
+                    .tracking(0.7)
             }
-            .frame(width: 40, height: 40)
+            .frame(width: 34, height: 34)
             .foregroundStyle(isSelected ? theme.bottomRed : theme.textPrimary)
             .background(isSelected ? theme.selectedLight : theme.topRed.opacity(0.35))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(isSelected ? theme.accent : theme.text.opacity(0.10), lineWidth: 2)
             )
-            .shadow(color: .black.opacity(isSelected ? 0.35 : 0), radius: 12, x: 0, y: 6)
-            .scaleEffect(isSelected ? 1.04 : 1)
+            .shadow(color: .black.opacity(isSelected ? 0.28 : 0), radius: 8, x: 0, y: 4)
+            .scaleEffect(isSelected ? 1.03 : 1)
         }
         .buttonStyle(.plain)
     }
