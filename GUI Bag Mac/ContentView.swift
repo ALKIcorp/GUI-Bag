@@ -192,11 +192,13 @@ private struct ConsoleWindow: View {
                 CanvasToolbar(
                     model: model,
                     theme: theme,
+                    activeTab: $model.activeTab,
                     showsExpandControl: true,
                     onExpand: { isShowingExpandedCanvas = true }
                 )
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 18)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
 
                 GeometryReader { geo in
                     let leftWidth = geo.size.width * 4.0 / 12.0
@@ -442,6 +444,7 @@ private struct CanvasWorkspace: View {
             CanvasToolbar(
                 model: model,
                 theme: theme,
+                activeTab: $model.activeTab,
                 showsExpandControl: showsExpandControl,
                 onExpand: onExpand
             )
@@ -531,53 +534,51 @@ private struct ToolbarBundledAppIconMark: View {
 private struct CanvasToolbar: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
+    @Binding var activeTab: EditorTab
     let showsExpandControl: Bool
     let onExpand: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ToolbarBundledAppIconMark()
-                .frame(width: 28, height: 28)
+        ZStack {
+            HStack(alignment: .center) {
+                HStack(spacing: 12) {
+                    ToolbarBundledAppIconMark()
+                        .frame(width: 54, height: 54)
 
-            HStack(spacing: 10) {
-                if model.openTabs.count > 1 {
-                    GlassTabRail(theme: theme) {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10) {
-                                ForEach(model.openTabs) { item in
-                                    CanvasTabButton(
-                                        item: item,
-                                        theme: theme,
-                                        isSelected: model.selectedID == item.id
-                                    ) {
-                                        model.selectTab(id: item.id)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("CYBERPUNK GLASS")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .tracking(1.8)
+                            .foregroundStyle(theme.textPrimary)
+                            .lineLimit(1)
+
+                        Text("UI COMPONENT")
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .tracking(3.2)
+                            .foregroundStyle(theme.textSecondary.opacity(0.95))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                CanvasControlCluster(theme: theme, model: model, showsExpandControl: showsExpandControl, onExpand: onExpand)
+                    .fixedSize()
+                    .layoutPriority(1)
+            }
+
+            GlassTabRail(theme: theme) {
+                HStack(spacing: 12) {
+                    ForEach(EditorTab.allCases) { tab in
+                        ToolbarModeButton(theme: theme, tab: tab, isSelected: activeTab == tab) {
+                            activeTab = tab
                         }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
-                    .layoutPriority(1)
-                } else {
-                    Spacer(minLength: 0)
                 }
-
-                CanvasAddTabButton(theme: theme) {
-                    model.addItem()
-                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Rectangle()
-                .fill(theme.text.opacity(0.08))
-                .frame(width: 1, height: 30)
-
-            CanvasControlCluster(theme: theme, model: model, showsExpandControl: showsExpandControl, onExpand: onExpand)
-                .fixedSize()
-                .layoutPriority(1)
+            .frame(maxWidth: 420)
         }
+        .frame(minHeight: 64)
     }
 }
 
@@ -885,7 +886,7 @@ private struct EditorPanel: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text((currentItem?.name ?? "NO_ITEM").uppercased())
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -902,15 +903,6 @@ private struct EditorPanel: View {
                 }
                 .frame(width: 118, alignment: .leading)
 
-                HStack(spacing: 8) {
-                    ForEach(EditorTab.allCases) { tab in
-                        TabButton(theme: theme, tab: tab, isSelected: activeTab == tab) {
-                            activeTab = tab
-                        }
-                    }
-                }
-                .padding(.top, 1)
-
                 Spacer(minLength: 0)
 
                 Text(statusText.uppercased())
@@ -922,7 +914,7 @@ private struct EditorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 12)
             .padding(.trailing, 14)
-            .padding(.top, 4)
+            .padding(.top, 2)
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -974,8 +966,38 @@ private struct EditorPanel: View {
             .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 10)
+        .padding(.top, 6)
         .padding(.bottom, 10)
+    }
+}
+
+private struct ToolbarModeButton: View {
+    let theme: ConsoleThemePreset
+    let tab: EditorTab
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: tab.iconName)
+                    .font(.system(size: 20, weight: .black))
+                Text(tab.title)
+                    .font(.system(size: 8, weight: .black, design: .rounded))
+                    .tracking(1.3)
+            }
+            .frame(width: 72, height: 72)
+            .foregroundStyle(isSelected ? theme.bottomRed : theme.textPrimary)
+            .background(isSelected ? theme.selectedLight : theme.topRed.opacity(0.30))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(isSelected ? theme.accent : theme.text.opacity(0.10), lineWidth: 2)
+            )
+            .shadow(color: .black.opacity(isSelected ? 0.35 : 0), radius: 12, x: 0, y: 6)
+            .scaleEffect(isSelected ? 1.02 : 1)
+        }
+        .buttonStyle(.plain)
     }
 }
 
