@@ -506,28 +506,6 @@ private func makeCanvasHTML(for item: StoredItem, theme: ConsoleThemePreset) -> 
     """
 }
 
-private struct ToolbarBundledAppIconMark: View {
-    private let icon: NSImage? = BundledApplicationIcon.nsImage()
-
-    var body: some View {
-        Group {
-            if let icon {
-                Image(nsImage: icon)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 1)
-        .accessibilityHidden(true)
-    }
-}
-
 private struct CanvasToolbar: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
@@ -535,10 +513,7 @@ private struct CanvasToolbar: View {
     let onExpand: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ToolbarBundledAppIconMark()
-                .frame(width: 28, height: 28)
-
+        HStack(alignment: .center, spacing: 10) {
             HStack(spacing: 10) {
                 if model.openTabs.count > 1 {
                     GlassTabRail(theme: theme) {
