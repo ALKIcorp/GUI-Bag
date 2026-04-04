@@ -221,15 +221,14 @@ private struct ConsoleWindow: View {
                                 .frame(height: displayHeight)
 
                             HStack(spacing: 0) {
-                                CollectionsBox(theme: theme, currentItem: model.currentItem)
+                                CollectionsBox(theme: theme)
                                     .frame(width: collectionsWidth)
 
                                 ItemListPanel(
                                     theme: theme,
                                     items: model.items,
                                     selectedID: $model.selectedID,
-                                    rename: model.renameItem,
-                                    currentItem: model.currentItem
+                                    rename: model.renameItem
                                 )
                                 .frame(width: listWidth)
                             }
@@ -317,7 +316,6 @@ private struct DisplayArea: View {
 
 private struct CollectionsBox: View {
     let theme: ConsoleThemePreset
-    let currentItem: StoredItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -344,35 +342,6 @@ private struct CollectionsBox: View {
                     CollectionRow(theme: theme, label: "RECENT", icon: "clock", isActive: false)
                 }
                 .padding(10)
-            }
-
-            Spacer(minLength: 0)
-
-            if let currentItem {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ACTIVE PROFILE")
-                        .font(.system(size: 8, weight: .black, design: .rounded))
-                        .tracking(1.8)
-                        .foregroundStyle(theme.textMuted)
-                    Text(currentItem.name.uppercased())
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .italic()
-                        .foregroundStyle(theme.textPrimary)
-                        .lineLimit(1)
-                    Text(currentItem.type.uppercased())
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .tracking(1.4)
-                        .foregroundStyle(theme.textSecondary)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(theme.panelDeep.opacity(0.45))
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(theme.stroke)
-                        .frame(height: 2)
-                }
             }
         }
         .background(theme.panel2)
@@ -1101,7 +1070,6 @@ private struct ItemListPanel: View {
     let items: [StoredItem]
     @Binding var selectedID: String?
     let rename: (String, String) -> Void
-    let currentItem: StoredItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1121,33 +1089,6 @@ private struct ItemListPanel: View {
             .padding(.horizontal, 8)
             .padding(.top, 18)
             .padding(.bottom, 16)
-
-            if let currentItem {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("ACTIVE PROFILE")
-                        .font(.system(size: 8, weight: .black, design: .rounded))
-                        .tracking(1.8)
-                        .foregroundStyle(theme.textMuted)
-                    Text(currentItem.name.uppercased())
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .italic()
-                        .foregroundStyle(theme.textPrimary)
-                        .lineLimit(1)
-                    Text(currentItem.type.uppercased())
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .tracking(1.4)
-                        .foregroundStyle(theme.textSecondary)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(theme.panelDeep.opacity(0.45))
-                .overlay(alignment: .top) {
-                    Rectangle()
-                        .fill(theme.stroke)
-                        .frame(height: 2)
-                }
-            }
         }
         .background(theme.panel2)
         .overlay(alignment: .leading) {
