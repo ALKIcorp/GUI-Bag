@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct LaunchRootView: View {
@@ -36,12 +37,21 @@ struct LaunchRootView: View {
 private struct SplashScreenView: View {
     var body: some View {
         VStack(spacing: 24) {
-            Image("GUIBagSplashIcon")
-                .resizable()
-                .interpolation(.high)
-                .scaledToFit()
-                .frame(width: 118, height: 118)
-                .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
+            Group {
+                if let icon = BundledApplicationIcon.nsImage() {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                } else {
+                    Image("GUIBagSplashIcon")
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                }
+            }
+            .frame(width: 118, height: 118)
+            .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
 
             Image("GUIBagTextLogo")
                 .resizable()

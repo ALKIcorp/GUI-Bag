@@ -205,7 +205,7 @@ private struct ConsoleWindow: View {
                     let collectionsWidth = rightWidth * 1.2 / 3.2
                     let listWidth = rightWidth * 2.0 / 3.2
 
-                    HStack(spacing: 0) {
+                    HStack(alignment: .top, spacing: 0) {
                         EditorPanel(
                             theme: theme,
                             currentItem: model.currentItem,
@@ -213,7 +213,7 @@ private struct ConsoleWindow: View {
                             code: model.codeBinding,
                             statusText: model.statusText
                         )
-                        .frame(width: leftWidth, height: geo.size.height)
+                        .frame(width: leftWidth, height: displayHeight)
 
                         VStack(spacing: 0) {
                             DisplayArea(model: model, theme: theme)
@@ -505,6 +505,28 @@ private func makeCanvasHTML(for item: StoredItem, theme: ConsoleThemePreset) -> 
     """
 }
 
+private struct ToolbarBundledAppIconMark: View {
+    private let icon: NSImage? = BundledApplicationIcon.nsImage()
+
+    var body: some View {
+        Group {
+            if let icon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 1)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct CanvasToolbar: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
@@ -513,6 +535,9 @@ private struct CanvasToolbar: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            ToolbarBundledAppIconMark()
+                .frame(width: 28, height: 28)
+
             HStack(spacing: 10) {
                 if model.openTabs.count > 1 {
                     GlassTabRail(theme: theme) {
