@@ -344,25 +344,29 @@ private struct CanvasToolbar: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             HStack(spacing: 10) {
-                GlassTabRail(theme: theme) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(model.openTabs) { item in
-                                CanvasTabButton(
-                                    item: item,
-                                    theme: theme,
-                                    isSelected: model.selectedID == item.id
-                                ) {
-                                    model.selectTab(id: item.id)
+                if model.openTabs.count > 1 {
+                    GlassTabRail(theme: theme) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(model.openTabs) { item in
+                                    CanvasTabButton(
+                                        item: item,
+                                        theme: theme,
+                                        isSelected: model.selectedID == item.id
+                                    ) {
+                                        model.selectTab(id: item.id)
+                                    }
                                 }
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
                     }
+                    .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+                    .layoutPriority(1)
+                } else {
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
-                .layoutPriority(1)
 
                 CanvasAddTabButton(theme: theme) {
                     model.addItem()
