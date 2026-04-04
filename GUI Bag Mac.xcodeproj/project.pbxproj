@@ -13,7 +13,6 @@
 		A1B2C3D41F00100000000014 /* ItemStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000024 /* ItemStore.swift */; };
 		A1B2C3D41F00100000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000025 /* Assets.xcassets */; };
 		A1B2C3D41F00100000000016 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000026 /* SplashScreenView.swift */; };
-		A1B2C3D41F00100000000017 /* BundledApplicationIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000027 /* BundledApplicationIcon.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,7 +24,6 @@
 		A1B2C3D41F00100000000024 /* ItemStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemStore.swift; sourceTree = "<group>"; };
 		A1B2C3D41F00100000000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D41F00100000000026 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
-		A1B2C3D41F00100000000027 /* BundledApplicationIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledApplicationIcon.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,7 +54,6 @@
 				A1B2C3D41F00100000000022 /* CanvasRendererView.swift */,
 				A1B2C3D41F00100000000024 /* ItemStore.swift */,
 				A1B2C3D41F00100000000026 /* SplashScreenView.swift */,
-				A1B2C3D41F00100000000027 /* BundledApplicationIcon.swift */,
 				A1B2C3D41F00100000000025 /* Assets.xcassets */,
 			);
 			path = "GUI Bag Mac";
@@ -143,7 +140,6 @@
 				A1B2C3D41F00100000000012 /* CanvasRendererView.swift in Sources */,
 				A1B2C3D41F00100000000014 /* ItemStore.swift in Sources */,
 				A1B2C3D41F00100000000016 /* SplashScreenView.swift in Sources */,
-				A1B2C3D41F00100000000017 /* BundledApplicationIcon.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

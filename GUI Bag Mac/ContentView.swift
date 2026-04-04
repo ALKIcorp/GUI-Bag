@@ -211,9 +211,10 @@ private struct ConsoleWindow: View {
                             currentItem: model.currentItem,
                             activeTab: $model.activeTab,
                             code: model.codeBinding,
-                            statusText: model.statusText
+                            statusText: model.statusText,
+                            codeBoxHeight: displayHeight
                         )
-                        .frame(width: leftWidth, height: displayHeight)
+                        .frame(width: leftWidth)
 
                         VStack(spacing: 0) {
                             DisplayArea(model: model, theme: theme)
@@ -879,6 +880,7 @@ private struct EditorPanel: View {
     @Binding var activeTab: EditorTab
     let code: (EditorTab) -> Binding<String>
     let statusText: String
+    let codeBoxHeight: CGFloat
     @State private var collapsedSections: Set<EditorTab> = []
 
     var body: some View {
@@ -966,7 +968,8 @@ private struct EditorPanel: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .top)
+            .frame(height: codeBoxHeight)
             .padding(.horizontal, 2)
             .padding(.bottom, 4)
         }
