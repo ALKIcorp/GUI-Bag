@@ -184,18 +184,76 @@ private struct ConsoleWindow: View {
     let theme: ConsoleThemePreset
     let onThemeSelected: (ConsoleThemePreset) -> Void
     let onAdd: () -> Void
+    @State private var isShowingExpandedCanvas = false
 
     var body: some View {
         VStack(spacing: 0) {
-            CanvasSection(model: model, theme: theme, onAdd: onAdd)
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: .infinity)
+            VStack(spacing: 0) {
+                CanvasToolbar(
+                    model: model,
+                    theme: theme,
+                    showsExpandControl: true,
+                    onExpand: { isShowingExpandedCanvas = true }
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
 
-            HandleDivider(theme: theme)
+                GeometryReader { geo in
+                    let leftWidth = geo.size.width * 4.0 / 12.0
+                    let rightWidth = geo.size.width * 8.0 / 12.0
+                    let displayHeight = geo.size.height * 1.8 / 2.8
+                    let collectionsWidth = rightWidth * 1.2 / 3.2
+                    let listWidth = rightWidth * 2.0 / 3.2
 
-            BottomSection(model: model, theme: theme, onThemeSelected: onThemeSelected, onAdd: onAdd)
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: .infinity)
+                    HStack(spacing: 0) {
+                        EditorPanel(
+                            theme: theme,
+                            currentItem: model.currentItem,
+                            activeTab: $model.activeTab,
+                            code: model.codeBinding,
+                            statusText: model.statusText
+                        )
+                        .frame(width: leftWidth, height: geo.size.height)
+
+                        VStack(spacing: 0) {
+                            DisplayArea(model: model, theme: theme)
+                                .frame(height: displayHeight)
+
+                            HStack(spacing: 0) {
+                                CollectionsBox(theme: theme, currentItem: model.currentItem)
+                                    .frame(width: collectionsWidth)
+
+                                ItemListPanel(
+                                    theme: theme,
+                                    items: model.items,
+                                    selectedID: $model.selectedID,
+                                    rename: model.renameItem,
+                                    currentItem: model.currentItem
+                                )
+                                .frame(width: listWidth)
+                            }
+                            .frame(maxHeight: .infinity)
+                        }
+                        .frame(width: rightWidth, height: geo.size.height)
+                    }
+                }
+
+                FooterBar(
+                    theme: theme,
+                    onThemeSelected: onThemeSelected,
+                    canRemove: model.items.count > 1 && model.currentItem != nil,
+                    onAdd: onAdd,
+                    onRemove: model.deleteSelectedItem,
+                    onExportBackup: model.exportBackup,
+                    onImportBackup: model.importBackup
+                )
+            }
+            .background(theme.bottomRed)
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
+            )
         }
         .padding(8)
         .background(theme.shell)
@@ -205,14 +263,15 @@ private struct ConsoleWindow: View {
                 .stroke(theme.text.opacity(0.05), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.85), radius: 60, x: 0, y: 30)
+        .sheet(isPresented: $isShowingExpandedCanvas) {
+            ExpandedCanvasSheet(model: model, theme: theme)
+        }
     }
 }
 
-private struct CanvasSection: View {
+private struct DisplayArea: View {
     @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
-    let onAdd: () -> Void
-    @State private var isShowingExpandedCanvas = false
 
     var body: some View {
         ZStack {
@@ -221,22 +280,133 @@ private struct CanvasSection: View {
             DotPatternOverlay()
                 .opacity(0.10)
 
-            CanvasWorkspace(
-                model: model,
-                theme: theme,
-                showsExpandControl: true,
-                onExpand: { isShowingExpandedCanvas = true }
-            )
+            if model.items.isEmpty {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(theme.previewBg)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(theme.stroke, lineWidth: 4)
+
+                    ConsoleEmptyState(
+                        theme: theme,
+                        title: "NO CANVAS",
+                        message: "Add a tab to open a design canvas."
+                    )
+                }
                 .padding(24)
+            } else {
+                CanvasCard(
+                    item: model.currentItem ?? model.items[0],
+                    theme: theme,
+                    zoomScale: model.canvasZoom,
+                    isActive: true
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(18)
+            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(theme.stroke.opacity(0.85), lineWidth: 4)
         )
-        .sheet(isPresented: $isShowingExpandedCanvas) {
-            ExpandedCanvasSheet(model: model, theme: theme)
+        .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 14)
+    }
+}
+
+private struct CollectionsBox: View {
+    let theme: ConsoleThemePreset
+    let currentItem: StoredItem?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("COLLECTIONS")
+                    .font(.system(size: 9, weight: .black, design: .rounded))
+                    .tracking(1.8)
+                    .foregroundStyle(theme.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(theme.panel2)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(theme.stroke)
+                    .frame(height: 2)
+            }
+
+            ScrollView {
+                VStack(spacing: 6) {
+                    CollectionRow(theme: theme, label: "ALL ITEMS", icon: "square.grid.2x2", isActive: true)
+                    CollectionRow(theme: theme, label: "FAVORITES", icon: "star", isActive: false)
+                    CollectionRow(theme: theme, label: "RECENT", icon: "clock", isActive: false)
+                }
+                .padding(10)
+            }
+
+            Spacer(minLength: 0)
+
+            if let currentItem {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ACTIVE PROFILE")
+                        .font(.system(size: 8, weight: .black, design: .rounded))
+                        .tracking(1.8)
+                        .foregroundStyle(theme.textMuted)
+                    Text(currentItem.name.uppercased())
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .italic()
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                    Text(currentItem.type.uppercased())
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .tracking(1.4)
+                        .foregroundStyle(theme.textSecondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(theme.panelDeep.opacity(0.45))
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(theme.stroke)
+                        .frame(height: 2)
+                }
+            }
         }
+        .background(theme.panel2)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(theme.stroke)
+                .frame(width: 2)
+        }
+    }
+}
+
+private struct CollectionRow: View {
+    let theme: ConsoleThemePreset
+    let label: String
+    let icon: String
+    let isActive: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
+                .frame(width: 20)
+
+            Text(label)
+                .font(.system(size: 9, weight: .black, design: .rounded))
+                .tracking(0.8)
+                .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
+
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(isActive ? theme.panelDeep.opacity(0.65) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -675,74 +845,6 @@ private struct ExpandedCanvasSheet: View {
             .padding(24)
         }
         .frame(minWidth: 1200, minHeight: 760)
-    }
-}
-
-private struct HandleDivider: View {
-    let theme: ConsoleThemePreset
-
-    var body: some View {
-        HStack {
-            Capsule()
-                .fill(theme.panelDeep.opacity(0.9))
-                .frame(width: 56, height: 6)
-
-            Spacer()
-
-            Capsule()
-                .fill(theme.panelDeep.opacity(0.9))
-                .frame(width: 56, height: 6)
-        }
-        .padding(.horizontal, 64)
-        .frame(height: 24)
-        .background(theme.shell)
-    }
-}
-
-private struct BottomSection: View {
-    @ObservedObject var model: AppModel
-    let theme: ConsoleThemePreset
-    let onThemeSelected: (ConsoleThemePreset) -> Void
-    let onAdd: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                EditorPanel(
-                    theme: theme,
-                    currentItem: model.currentItem,
-                    activeTab: $model.activeTab,
-                    code: model.codeBinding,
-                    statusText: model.statusText
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                ItemListPanel(
-                    theme: theme,
-                    items: model.items,
-                    selectedID: $model.selectedID,
-                    rename: model.renameItem,
-                    currentItem: model.currentItem
-                )
-                .frame(width: 320)
-            }
-
-            FooterBar(
-                theme: theme,
-                onThemeSelected: onThemeSelected,
-                canRemove: model.items.count > 1 && model.currentItem != nil,
-                onAdd: onAdd,
-                onRemove: model.deleteSelectedItem,
-                onExportBackup: model.exportBackup,
-                onImportBackup: model.importBackup
-            )
-        }
-        .background(theme.bottomRed)
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(theme.stroke.opacity(0.85), lineWidth: 8)
-        )
     }
 }
 
