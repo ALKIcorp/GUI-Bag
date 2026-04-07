@@ -76,6 +76,10 @@ private struct AboutPanelView: View {
                 Text("Category: \(AppMetadata.categoryLabel)")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
+
+                Text("by Alki Corp.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
