@@ -45,12 +45,11 @@ enum BundledApplicationIcon {
 }
 
 enum AppFonts {
-    static let microTechnicExtendedRegular = "MicroTechnicExt"
-    static let microTechnicExtendedBold = "MicroTechnicExtBold"
+    static let helveticaNeueRegular = "Helvetica Neue"
+    static let helveticaNeueLTStdBold = "HelveticaNeueLTStd-Bd"
 
     static func registerAll() {
-        registerFont(named: "Micro Technic Extended Regular", extension: "ttf")
-        registerFont(named: "Micro Technic Extended Bold", extension: "ttf")
+        registerFont(named: "Helvetica Neue LT Std 75 Bold", extension: "otf")
     }
 
     private static func registerFont(named name: String, extension fileExtension: String) {

@@ -61,10 +61,10 @@ private struct SplashScreenView: View {
 
             (
                 Text("by ")
-                    .font(.custom(AppFonts.microTechnicExtendedRegular, size: 17))
+                    .font(.custom(AppFonts.helveticaNeueRegular, size: 13))
                 +
                 Text("Alki Corp.")
-                    .font(.custom(AppFonts.microTechnicExtendedBold, size: 17))
+                    .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 13))
             )
             .foregroundStyle(.white.opacity(0.9))
         }
