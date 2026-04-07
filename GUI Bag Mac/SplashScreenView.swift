@@ -41,19 +41,19 @@ struct LaunchRootView: View {
 
 private struct SplashScreenView: View {
     var body: some View {
-        VStack(spacing: 34) {
+        VStack(spacing: 20) {
             Image("GUIBagSplashIcon")
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-                .frame(width: 260, height: 260)
-                .shadow(color: .black.opacity(0.18), radius: 26, x: 0, y: 16)
+                .frame(width: 220, height: 220)
+                .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 15)
 
             Image("GUIBagTextLogo")
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-                .frame(width: 572)
+                .frame(width: 520)
 
             (
                 Text("by ")
@@ -67,10 +67,10 @@ private struct SplashScreenView: View {
             Text("All Rights Reserved.")
                 .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 17))
                 .foregroundStyle(.white.opacity(0.8))
-                .padding(.top, 16)
+                .padding(.top, 10)
         }
         .padding(.horizontal, 54)
-        .padding(.vertical, 48)
+        .padding(.vertical, 36)
         .frame(width: LaunchWindowMetrics.splashSize.width, height: LaunchWindowMetrics.splashSize.height)
         .background(Color.clear)
     }
