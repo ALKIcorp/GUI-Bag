@@ -1,9 +1,11 @@
 import AppKit
+import CoreText
 import SwiftUI
 
 @main
 struct GUIBagMacApp: App {
     init() {
+        AppFonts.registerAll()
         BundledApplicationIcon.applyAsDockIcon()
     }
 
@@ -39,5 +41,23 @@ enum BundledApplicationIcon {
     static func applyAsDockIcon() {
         guard let image = nsImage() else { return }
         NSApplication.shared.applicationIconImage = image
+    }
+}
+
+enum AppFonts {
+    static let microTechnicExtendedRegular = "MicroTechnicExt"
+    static let microTechnicExtendedBold = "MicroTechnicExtBold"
+
+    static func registerAll() {
+        registerFont(named: "Micro Technic Extended Regular", extension: "ttf")
+        registerFont(named: "Micro Technic Extended Bold", extension: "ttf")
+    }
+
+    private static func registerFont(named name: String, extension fileExtension: String) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
+            return
+        }
+
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
     }
 }

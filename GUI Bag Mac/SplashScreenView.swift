@@ -36,7 +36,7 @@ struct LaunchRootView: View {
 
 private struct SplashScreenView: View {
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             Group {
                 if let icon = BundledApplicationIcon.nsImage() {
                     Image(nsImage: icon)
@@ -58,6 +58,15 @@ private struct SplashScreenView: View {
                 .interpolation(.high)
                 .scaledToFit()
                 .frame(width: 320)
+
+            (
+                Text("by ")
+                    .font(.custom(AppFonts.microTechnicExtendedRegular, size: 17))
+                +
+                Text("Alki Corp.")
+                    .font(.custom(AppFonts.microTechnicExtendedBold, size: 17))
+            )
+            .foregroundStyle(.white.opacity(0.9))
         }
         .padding(.horizontal, 36)
         .padding(.vertical, 32)

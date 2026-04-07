@@ -14,6 +14,8 @@
 		A1B2C3D41F00100000000015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000025 /* Assets.xcassets */; };
 		A1B2C3D41F00100000000016 /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000026 /* SplashScreenView.swift */; };
 		A1B2C3D41F00100000000017 /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000027 /* AboutWindow.swift */; };
+		A1B2C3D41F00100000000018 /* Micro Technic Extended Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000028 /* Micro Technic Extended Regular.ttf */; };
+		A1B2C3D41F00100000000019 /* Micro Technic Extended Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00100000000029 /* Micro Technic Extended Bold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +28,8 @@
 		A1B2C3D41F00100000000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D41F00100000000026 /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		A1B2C3D41F00100000000027 /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000028 /* Micro Technic Extended Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Micro Technic Extended Regular.ttf"; sourceTree = "<group>"; };
+		A1B2C3D41F00100000000029 /* Micro Technic Extended Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Micro Technic Extended Bold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,9 +61,19 @@
 				A1B2C3D41F00100000000024 /* ItemStore.swift */,
 				A1B2C3D41F00100000000026 /* SplashScreenView.swift */,
 				A1B2C3D41F00100000000027 /* AboutWindow.swift */,
+				A1B2C3D41F0010000000002A /* Fonts */,
 				A1B2C3D41F00100000000025 /* Assets.xcassets */,
 			);
 			path = "GUI Bag Mac";
+			sourceTree = "<group>";
+		};
+		A1B2C3D41F0010000000002A /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D41F00100000000028 /* Micro Technic Extended Regular.ttf */,
+				A1B2C3D41F00100000000029 /* Micro Technic Extended Bold.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		A1B2C3D41F00100000000006 /* Products */ = {
@@ -127,6 +141,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D41F00100000000018 /* Micro Technic Extended Regular.ttf in Resources */,
+				A1B2C3D41F00100000000019 /* Micro Technic Extended Bold.ttf in Resources */,
 				A1B2C3D41F00100000000015 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
