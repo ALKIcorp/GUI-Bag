@@ -41,36 +41,36 @@ struct LaunchRootView: View {
 
 private struct SplashScreenView: View {
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 26) {
             Image("GUIBagSplashIcon")
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-            .frame(width: 154, height: 154)
-            .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
+                .frame(width: 200, height: 200)
+                .shadow(color: .black.opacity(0.18), radius: 22, x: 0, y: 14)
 
             Image("GUIBagTextLogo")
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
-                .frame(width: 320)
+                .frame(width: 440)
 
             (
                 Text("by ")
-                    .font(.custom(AppFonts.helveticaNeueRegular, size: 14))
+                    .font(.custom(AppFonts.helveticaNeueRegular, size: 18))
                 +
                 Text("Alki Corp.")
-                    .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 14))
+                    .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 18))
             )
             .foregroundStyle(.white.opacity(0.9))
 
             Text("All Rights Reserved.")
-                .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 10))
+                .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 13))
                 .foregroundStyle(.white.opacity(0.8))
-                .padding(.top, 8)
+                .padding(.top, 12)
         }
-        .padding(.horizontal, 36)
-        .padding(.vertical, 32)
+        .padding(.horizontal, 48)
+        .padding(.vertical, 42)
         .frame(width: LaunchWindowMetrics.splashSize.width, height: LaunchWindowMetrics.splashSize.height)
         .background(Color.clear)
     }
