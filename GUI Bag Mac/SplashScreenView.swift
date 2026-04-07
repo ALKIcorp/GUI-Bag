@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+private enum LaunchWindowMetrics {
+    static let splashSize = NSSize(width: 784, height: 504)
+    static let mainSize = NSSize(width: 1100, height: 760)
+}
+
 struct LaunchRootView: View {
     @State private var isShowingSplash = true
 
@@ -66,7 +71,7 @@ private struct SplashScreenView: View {
         }
         .padding(.horizontal, 36)
         .padding(.vertical, 32)
-        .frame(width: 560, height: 360)
+        .frame(width: LaunchWindowMetrics.splashSize.width, height: LaunchWindowMetrics.splashSize.height)
         .background(Color.clear)
     }
 }
@@ -111,17 +116,26 @@ private struct LaunchWindowConfigurator: NSViewRepresentable {
             window.standardWindowButton(.closeButton)?.isHidden = true
             window.standardWindowButton(.miniaturizeButton)?.isHidden = true
             window.standardWindowButton(.zoomButton)?.isHidden = true
-            window.setContentSize(NSSize(width: 560, height: 360))
-            window.minSize = NSSize(width: 560, height: 360)
-            window.center()
+            center(window: window, contentSize: LaunchWindowMetrics.splashSize)
+            window.minSize = LaunchWindowMetrics.splashSize
         case .main:
             window.hasShadow = true
             window.standardWindowButton(.closeButton)?.isHidden = false
             window.standardWindowButton(.miniaturizeButton)?.isHidden = false
             window.standardWindowButton(.zoomButton)?.isHidden = false
-            window.setContentSize(NSSize(width: 1100, height: 760))
-            window.minSize = NSSize(width: 1100, height: 760)
-            window.center()
+            center(window: window, contentSize: LaunchWindowMetrics.mainSize)
+            window.minSize = LaunchWindowMetrics.mainSize
         }
+    }
+
+    private func center(window: NSWindow, contentSize: NSSize) {
+        let frameSize = window.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize)).size
+        let visibleFrame = window.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? NSRect(origin: .zero, size: frameSize)
+        let origin = NSPoint(
+            x: visibleFrame.midX - (frameSize.width / 2),
+            y: visibleFrame.midY - (frameSize.height / 2)
+        )
+
+        window.setFrame(NSRect(origin: origin, size: frameSize), display: true)
     }
 }
