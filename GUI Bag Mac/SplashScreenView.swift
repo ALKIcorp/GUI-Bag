@@ -50,7 +50,7 @@ private struct SplashScreenView: View {
                         .scaledToFit()
                 }
             }
-            .frame(width: 118, height: 118)
+            .frame(width: 154, height: 154)
             .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
 
             Image("GUIBagTextLogo")

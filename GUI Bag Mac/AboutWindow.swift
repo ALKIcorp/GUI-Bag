@@ -80,6 +80,13 @@ private struct AboutPanelView: View {
                 Text("by Alki Corp.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
+
+                Color.clear
+                    .frame(height: 8)
+
+                Text("All Rights Reserved.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
