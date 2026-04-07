@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+private let favoritesCollectionID = "__favorites__"
+
 struct ContentView: View {
     @StateObject private var model = AppModel()
     @State private var pendingNewItemName = ""
@@ -314,6 +316,7 @@ private struct ConsoleWindow: View {
                                     selectedID: $model.selectedID,
                                     rename: model.renameItem,
                                     duplicate: model.duplicateItem,
+                                    toggleFavorite: model.toggleFavorite,
                                     delete: model.deleteItem,
                                     onEditCollection: onEditItemCollectionRequested
                                 )
@@ -442,6 +445,16 @@ private struct CollectionsBox: View {
                         model.selectCollection(nil)
                     }
 
+                    CollectionRow(
+                        theme: theme,
+                        label: "FAVORITES",
+                        icon: "star",
+                        isActive: model.selectedCollectionID == favoritesCollectionID,
+                        count: model.items.filter(\.isFavorite).count
+                    ) {
+                        model.selectCollection(favoritesCollectionID)
+                    }
+
                     ForEach(model.collections) { collection in
                         EditableCollectionRow(
                             theme: theme,
@@ -481,7 +494,17 @@ private struct CollectionRow: View {
     let label: String
     let icon: String
     let isActive: Bool
+    let count: Int?
     let action: () -> Void
+
+    init(theme: ConsoleThemePreset, label: String, icon: String, isActive: Bool, count: Int? = nil, action: @escaping () -> Void) {
+        self.theme = theme
+        self.label = label
+        self.icon = icon
+        self.isActive = isActive
+        self.count = count
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
@@ -497,6 +520,12 @@ private struct CollectionRow: View {
                     .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
 
                 Spacer()
+
+                if let count {
+                    Text("\(count)")
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -1321,6 +1350,7 @@ private struct ItemListPanel: View {
     @Binding var selectedID: String?
     let rename: (String, String) -> Void
     let duplicate: (String) -> Void
+    let toggleFavorite: (String) -> Void
     let delete: (String) -> Void
     let onEditCollection: (StoredItem) -> Void
 
@@ -1336,6 +1366,7 @@ private struct ItemListPanel: View {
                             onSelect: { selectedID = item.id },
                             onRename: { rename(item.id, $0) },
                             onDuplicate: { duplicate(item.id) },
+                            onToggleFavorite: { toggleFavorite(item.id) },
                             onDelete: { delete(item.id) },
                             onEditCollection: { onEditCollection(item) }
                         )
@@ -1362,6 +1393,7 @@ private struct ItemRow: View {
     let onSelect: () -> Void
     let onRename: (String) -> Void
     let onDuplicate: () -> Void
+    let onToggleFavorite: () -> Void
     let onDelete: () -> Void
     let onEditCollection: () -> Void
 
@@ -1405,6 +1437,7 @@ private struct ItemRow: View {
 
                 Menu {
                     Button("Rename", action: beginEditing)
+                    Button(item.isFavorite ? "Remove from Favorites" : "Add to Favorites", action: toggleFavorite)
                     Button("Add to Collection", action: editCollection)
                     Button("Duplicate", action: duplicateItem)
                     Button("Delete", role: .destructive, action: deleteItem)
@@ -1460,6 +1493,11 @@ private struct ItemRow: View {
     private func editCollection() {
         onSelect()
         onEditCollection()
+    }
+
+    private func toggleFavorite() {
+        onSelect()
+        onToggleFavorite()
     }
 
     private func deleteItem() {
@@ -2339,6 +2377,9 @@ final class AppModel: ObservableObject {
 
     var filteredItems: [StoredItem] {
         guard let selectedCollectionID else { return items }
+        if selectedCollectionID == favoritesCollectionID {
+            return items.filter(\.isFavorite)
+        }
         return items.filter { $0.collectionID == selectedCollectionID }
     }
 
@@ -2384,7 +2425,8 @@ final class AppModel: ObservableObject {
                 payload: CreateItemPayload(
                     name: resolvedItemName(from: name),
                     type: "UI Component",
-                    collectionID: selectedCollectionID,
+                    collectionID: selectedCollectionID == favoritesCollectionID ? nil : selectedCollectionID,
+                    isFavorite: selectedCollectionID == favoritesCollectionID,
                     html: "",
                     css: "",
                     js: "",
@@ -2498,7 +2540,7 @@ final class AppModel: ObservableObject {
                 items[index] = item
             }
 
-            if let selectedCollectionID, item.collectionID != selectedCollectionID {
+            if !itemMatchesSelectedCollection(item) {
                 openTabIDs.removeAll { $0 == id }
                 if selectedID == id {
                     syncSelectionForCurrentCollection()
@@ -2516,6 +2558,33 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func toggleFavorite(id: String) {
+        guard let existingItem = items.first(where: { $0.id == id }) else { return }
+
+        flushPendingSave()
+
+        do {
+            let item = try store.updateStoredItem(
+                id: id,
+                patch: ["isFavorite": existingItem.isFavorite ? "false" : "true"]
+            )
+            if let index = items.firstIndex(where: { $0.id == id }) {
+                items[index] = item
+            }
+
+            if !itemMatchesSelectedCollection(item) {
+                openTabIDs.removeAll { $0 == id }
+                if selectedID == id {
+                    syncSelectionForCurrentCollection()
+                }
+            }
+
+            statusText = item.isFavorite ? "Added \(item.name) to Favorites" : "Removed \(item.name) from Favorites"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
     func duplicateItem(id: String) {
         guard let sourceItem = items.first(where: { $0.id == id }) else { return }
 
@@ -2527,6 +2596,7 @@ final class AppModel: ObservableObject {
                     name: duplicatedItemName(from: sourceItem.name),
                     type: sourceItem.type,
                     collectionID: sourceItem.collectionID,
+                    isFavorite: sourceItem.isFavorite,
                     html: sourceItem.html,
                     css: sourceItem.css,
                     js: sourceItem.js,
@@ -2802,5 +2872,13 @@ final class AppModel: ObservableObject {
         let firstID = visibleItems.first?.id
         openTabIDs = firstID.map { [$0] } ?? []
         selectedID = firstID
+    }
+
+    private func itemMatchesSelectedCollection(_ item: StoredItem) -> Bool {
+        guard let selectedCollectionID else { return true }
+        if selectedCollectionID == favoritesCollectionID {
+            return item.isFavorite
+        }
+        return item.collectionID == selectedCollectionID
     }
 }

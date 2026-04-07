@@ -1,6 +1,6 @@
 import Foundation
 
-private let schemaVersion = 2
+private let schemaVersion = 3
 
 struct StoredCollection: Codable, Identifiable, Hashable {
     var id: String
@@ -14,12 +14,68 @@ struct StoredItem: Codable, Identifiable, Hashable {
     var name: String
     var type: String
     var collectionID: String?
+    var isFavorite: Bool
     var html: String
     var css: String
     var js: String
     var all: String?
     var createdAt: String?
     var updatedAt: String?
+
+    init(
+        id: String,
+        name: String,
+        type: String,
+        collectionID: String?,
+        isFavorite: Bool = false,
+        html: String,
+        css: String,
+        js: String,
+        all: String?,
+        createdAt: String?,
+        updatedAt: String?
+    ) {
+        self.id = id
+        self.name = name
+        self.type = type
+        self.collectionID = collectionID
+        self.isFavorite = isFavorite
+        self.html = html
+        self.css = css
+        self.js = js
+        self.all = all
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case type
+        case collectionID
+        case isFavorite
+        case html
+        case css
+        case js
+        case all
+        case createdAt
+        case updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        type = try container.decode(String.self, forKey: .type)
+        collectionID = try container.decodeIfPresent(String.self, forKey: .collectionID)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        html = try container.decodeIfPresent(String.self, forKey: .html) ?? ""
+        css = try container.decodeIfPresent(String.self, forKey: .css) ?? ""
+        js = try container.decodeIfPresent(String.self, forKey: .js) ?? ""
+        all = try container.decodeIfPresent(String.self, forKey: .all)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt)
+    }
 }
 
 struct ItemDatabase: Codable {
@@ -73,6 +129,7 @@ struct CreateItemPayload: Decodable {
     var name: String?
     var type: String?
     var collectionID: String?
+    var isFavorite: Bool?
     var html: String?
     var css: String?
     var js: String?
@@ -140,6 +197,7 @@ final class ItemStore {
             name: payload.name?.isEmpty == false ? payload.name! : "NEW_CODE",
             type: payload.type?.isEmpty == false ? payload.type! : "UI",
             collectionID: collectionID,
+            isFavorite: payload.isFavorite ?? false,
             html: payload.html ?? "",
             css: payload.css ?? "",
             js: payload.js ?? "",
@@ -157,7 +215,7 @@ final class ItemStore {
     }
 
     func updateStoredItem(id: String, patch: [String: String]) throws -> StoredItem {
-        let allowedFields = Set(["name", "type", "collectionID", "html", "css", "js", "all"])
+        let allowedFields = Set(["name", "type", "collectionID", "isFavorite", "html", "css", "js", "all"])
         let patch = patch.filter { allowedFields.contains($0.key) }
         guard !patch.isEmpty else {
             throw ItemStoreError.invalidPayload
@@ -177,6 +235,8 @@ final class ItemStore {
                 item.type = value
             case "collectionID":
                 item.collectionID = normalizedCollectionID(value, collections: db.collections)
+            case "isFavorite":
+                item.isFavorite = normalizedFavoriteFlag(value)
             case "html":
                 item.html = value
             case "css":
@@ -296,6 +356,7 @@ final class ItemStore {
                 name: importedItem.name.isEmpty ? "NEW_CODE" : importedItem.name,
                 type: importedItem.type.isEmpty ? "UI Component" : importedItem.type,
                 collectionID: importedItem.collectionID,
+                isFavorite: importedItem.isFavorite,
                 html: importedItem.html,
                 css: importedItem.css,
                 js: importedItem.js,
@@ -430,6 +491,7 @@ final class ItemStore {
                     name: "Super Potion",
                     type: "UI Component",
                     collectionID: nil,
+                    isFavorite: false,
                     html: "<button class=\"potion-btn\">Heal 50HP</button>",
                     css: """
                     .potion-btn {
@@ -459,6 +521,7 @@ final class ItemStore {
                     name: "Lemonade",
                     type: "Beverage",
                     collectionID: nil,
+                    isFavorite: false,
                     html: "<div class=\"lemon-loader\"></div>",
                     css: """
                     .lemon-loader {
@@ -487,6 +550,15 @@ final class ItemStore {
     private func normalizedCollectionID(_ collectionID: String?, collections: [StoredCollection]) -> String? {
         guard let collectionID, !collectionID.isEmpty else { return nil }
         return collections.contains(where: { $0.id == collectionID }) ? collectionID : nil
+    }
+
+    private func normalizedFavoriteFlag(_ value: String) -> Bool {
+        switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "1", "true", "yes", "y", "on":
+            return true
+        default:
+            return false
+        }
     }
 
     private static func utcNow() -> String {
