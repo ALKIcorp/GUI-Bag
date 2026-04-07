@@ -11,7 +11,15 @@ struct GUIBagMacApp: App {
         WindowGroup {
             LaunchRootView()
         }
+        .defaultSize(width: 1280, height: 820)
         .windowStyle(.hiddenTitleBar)
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About \(AppMetadata.displayName)") {
+                    AboutWindowController.shared.show()
+                }
+            }
+        }
     }
 }
 

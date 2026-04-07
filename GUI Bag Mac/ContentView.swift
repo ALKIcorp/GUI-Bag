@@ -6,6 +6,10 @@ struct ContentView: View {
     @StateObject private var model = AppModel()
     @State private var pendingNewItemName = ""
     @State private var isShowingAddModal = false
+    @State private var pendingNewCollectionName = ""
+    @State private var isShowingAddCollectionModal = false
+    @State private var collectionPendingDeletion: PendingCollectionDeletion?
+    @State private var itemPendingCollectionEdit: PendingItemCollectionEdit?
     @AppStorage("selectedThemeName") private var selectedThemeName = ConsoleThemePreset.presets.first?.name ?? "Crimson Glass"
 
     var body: some View {
@@ -26,6 +30,20 @@ struct ContentView: View {
                     onAdd: {
                         pendingNewItemName = model.nextDefaultName()
                         isShowingAddModal = true
+                    },
+                    onAddCollection: {
+                        pendingNewCollectionName = model.nextDefaultCollectionName()
+                        isShowingAddCollectionModal = true
+                    },
+                    onDeleteCollectionRequested: { collection in
+                        collectionPendingDeletion = PendingCollectionDeletion(id: collection.id, name: collection.name)
+                    },
+                    onEditItemCollectionRequested: { item in
+                        itemPendingCollectionEdit = PendingItemCollectionEdit(
+                            id: item.id,
+                            itemName: item.name,
+                            selectedCollectionID: item.collectionID
+                        )
                     }
                 )
                 .frame(
@@ -50,12 +68,71 @@ struct ContentView: View {
                     .transition(.opacity)
                     .zIndex(1)
                 }
+
+                if isShowingAddCollectionModal {
+                    AddCollectionOverlay(
+                        theme: theme,
+                        collectionName: $pendingNewCollectionName,
+                        onClose: {
+                            isShowingAddCollectionModal = false
+                            pendingNewCollectionName = ""
+                        },
+                        onConfirm: {
+                            model.addCollection(named: pendingNewCollectionName)
+                            isShowingAddCollectionModal = false
+                            pendingNewCollectionName = ""
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(2)
+                }
+
+                if let pendingItemCollectionEdit = itemPendingCollectionEdit {
+                    ItemCollectionOverlay(
+                        theme: theme,
+                        itemName: pendingItemCollectionEdit.itemName,
+                        collections: model.collections,
+                        initialCollectionID: pendingItemCollectionEdit.selectedCollectionID,
+                        onClose: {
+                            itemPendingCollectionEdit = nil
+                        },
+                        onConfirm: { collectionID in
+                            model.assignItem(id: pendingItemCollectionEdit.id, toCollectionID: collectionID)
+                            itemPendingCollectionEdit = nil
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(3)
+                }
             }
         }
         .frame(minWidth: 1100, minHeight: 760)
         .background(WindowTransparencyConfigurator())
         .animation(.easeInOut(duration: 0.18), value: isShowingAddModal)
+        .animation(.easeInOut(duration: 0.18), value: isShowingAddCollectionModal)
+        .animation(.easeInOut(duration: 0.18), value: itemPendingCollectionEdit != nil)
+        .alert(item: $collectionPendingDeletion) { pendingDeletion in
+            Alert(
+                title: Text("Delete Collection"),
+                message: Text("Delete \"\(pendingDeletion.name)\"? Items in this collection will remain saved and move back to All Items."),
+                primaryButton: .destructive(Text("Delete")) {
+                    model.deleteCollection(id: pendingDeletion.id)
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
+}
+
+private struct PendingCollectionDeletion: Identifiable {
+    let id: String
+    let name: String
+}
+
+private struct PendingItemCollectionEdit: Identifiable, Equatable {
+    let id: String
+    let itemName: String
+    let selectedCollectionID: String?
 }
 
 private struct ConsoleThemePreset: Identifiable, Equatable {
@@ -184,6 +261,9 @@ private struct ConsoleWindow: View {
     let theme: ConsoleThemePreset
     let onThemeSelected: (ConsoleThemePreset) -> Void
     let onAdd: () -> Void
+    let onAddCollection: () -> Void
+    let onDeleteCollectionRequested: (StoredCollection) -> Void
+    let onEditItemCollectionRequested: (StoredItem) -> Void
     @State private var isShowingExpandedCanvas = false
 
     var body: some View {
@@ -220,14 +300,22 @@ private struct ConsoleWindow: View {
                                 .frame(height: displayHeight)
 
                             HStack(spacing: 0) {
-                                CollectionsBox(theme: theme)
+                                CollectionsBox(
+                                    model: model,
+                                    theme: theme,
+                                    onAddCollection: onAddCollection,
+                                    onDeleteCollectionRequested: onDeleteCollectionRequested
+                                )
                                     .frame(width: collectionsWidth)
 
                                 ItemListPanel(
                                     theme: theme,
-                                    items: model.items,
+                                    items: model.filteredItems,
                                     selectedID: $model.selectedID,
-                                    rename: model.renameItem
+                                    rename: model.renameItem,
+                                    duplicate: model.duplicateItem,
+                                    delete: model.deleteItem,
+                                    onEditCollection: onEditItemCollectionRequested
                                 )
                                 .frame(width: listWidth)
                             }
@@ -279,23 +367,24 @@ private struct DisplayArea: View {
             DotPatternOverlay()
                 .opacity(0.10)
 
-            if model.items.isEmpty {
+            if model.filteredItems.isEmpty {
                 ZStack {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(theme.previewBg)
+                        .fill(model.canvasBackdropMode.backgroundColor)
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(theme.stroke, lineWidth: 4)
 
                     ConsoleEmptyState(
                         theme: theme,
                         title: "NO CANVAS",
-                        message: "Add a tab to open a design canvas."
+                        message: model.selectedCollectionID == nil ? "Add a tab to open a design canvas." : "This collection is empty. Add a new item here."
                     )
                 }
                 .padding(24)
             } else {
                 CanvasCard(
-                    item: model.currentItem ?? model.items[0],
+                    model: model,
+                    item: model.currentItem ?? model.filteredItems[0],
                     theme: theme,
                     zoomScale: model.canvasZoom,
                     isActive: true
@@ -314,7 +403,10 @@ private struct DisplayArea: View {
 }
 
 private struct CollectionsBox: View {
+    @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
+    let onAddCollection: () -> Void
+    let onDeleteCollectionRequested: (StoredCollection) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -323,7 +415,17 @@ private struct CollectionsBox: View {
                     .font(.system(size: 9, weight: .black, design: .rounded))
                     .tracking(1.8)
                     .foregroundStyle(theme.textSecondary)
+
                 Spacer()
+
+                Button(action: onAddCollection) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(theme.accent2)
+                        .frame(width: 22, height: 22)
+                        .background(theme.panelDeep.opacity(0.5), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -336,9 +438,31 @@ private struct CollectionsBox: View {
 
             ScrollView {
                 VStack(spacing: 6) {
-                    CollectionRow(theme: theme, label: "ALL ITEMS", icon: "square.grid.2x2", isActive: true)
-                    CollectionRow(theme: theme, label: "FAVORITES", icon: "star", isActive: false)
-                    CollectionRow(theme: theme, label: "RECENT", icon: "clock", isActive: false)
+                    CollectionRow(theme: theme, label: "ALL ITEMS", icon: "square.grid.2x2", isActive: model.selectedCollectionID == nil) {
+                        model.selectCollection(nil)
+                    }
+
+                    ForEach(model.collections) { collection in
+                        EditableCollectionRow(
+                            theme: theme,
+                            collection: collection,
+                            isActive: model.selectedCollectionID == collection.id,
+                            itemCount: model.items.filter { $0.collectionID == collection.id }.count,
+                            onSelect: { model.selectCollection(collection.id) },
+                            onRename: { model.renameCollection(id: collection.id, to: $0) },
+                            onDelete: { onDeleteCollectionRequested(collection) }
+                        )
+                    }
+
+                    if model.collections.isEmpty {
+                        Text("NO CUSTOM SETS")
+                            .font(.system(size: 8, weight: .black, design: .monospaced))
+                            .tracking(1.2)
+                            .foregroundStyle(theme.textSecondary.opacity(0.72))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .padding(.top, 8)
+                    }
                 }
                 .padding(10)
             }
@@ -357,25 +481,120 @@ private struct CollectionRow: View {
     let label: String
     let icon: String
     let isActive: Bool
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
-                .frame(width: 20)
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
+                    .frame(width: 20)
 
-            Text(label)
-                .font(.system(size: 9, weight: .black, design: .rounded))
-                .tracking(0.8)
-                .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
+                Text(label)
+                    .font(.system(size: 9, weight: .black, design: .rounded))
+                    .tracking(0.8)
+                    .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
 
-            Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(isActive ? theme.panelDeep.opacity(0.65) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(isActive ? theme.panelDeep.opacity(0.65) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .buttonStyle(.plain)
+    }
+}
+
+private struct EditableCollectionRow: View {
+    let theme: ConsoleThemePreset
+    let collection: StoredCollection
+    let isActive: Bool
+    let itemCount: Int
+    let onSelect: () -> Void
+    let onRename: (String) -> Void
+    let onDelete: () -> Void
+
+    @State private var isEditing = false
+    @State private var draftName = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: onSelect) {
+                HStack(spacing: 10) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
+                        .frame(width: 18)
+
+                    if isEditing {
+                        TextField("", text: $draftName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
+                            .focused($isFocused)
+                            .onSubmit(commitRename)
+                            .onExitCommand(perform: cancelRename)
+                            .onChange(of: isFocused) { focused in
+                                if !focused && isEditing {
+                                    commitRename()
+                                }
+                            }
+                    } else {
+                        Text(collection.name.uppercased())
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .tracking(0.8)
+                            .foregroundStyle(isActive ? theme.textPrimary : theme.textMuted)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 6)
+
+                    Text("\(itemCount)")
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .foregroundStyle(isActive ? theme.accent2 : theme.textSecondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(isActive ? theme.panelDeep.opacity(0.65) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .onTapGesture(count: 2, perform: beginEditing)
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(theme.danger)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func beginEditing() {
+        onSelect()
+        draftName = collection.name
+        isEditing = true
+        DispatchQueue.main.async {
+            isFocused = true
+        }
+    }
+
+    private func commitRename() {
+        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && trimmed != collection.name {
+            onRename(trimmed)
+        }
+        isEditing = false
+        draftName = ""
+    }
+
+    private func cancelRename() {
+        isEditing = false
+        draftName = ""
     }
 }
 
@@ -414,22 +633,23 @@ private struct CanvasWorkspace: View {
                 onExpand: onExpand
             )
 
-            if model.items.isEmpty {
+            if model.filteredItems.isEmpty {
                 ZStack {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(theme.previewBg)
+                        .fill(model.canvasBackdropMode.backgroundColor)
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(theme.stroke, lineWidth: 4)
 
                     ConsoleEmptyState(
                         theme: theme,
                         title: "NO CANVAS",
-                        message: "Add a tab to open a design canvas."
+                        message: model.selectedCollectionID == nil ? "Add a tab to open a design canvas." : "This collection is empty. Add a new item here."
                     )
                 }
             } else {
                 CanvasCard(
-                    item: model.currentItem ?? model.items[0],
+                    model: model,
+                    item: model.currentItem ?? model.filteredItems[0],
                     theme: theme,
                     zoomScale: model.canvasZoom,
                     isActive: true
@@ -441,7 +661,7 @@ private struct CanvasWorkspace: View {
     }
 }
 
-private func makeCanvasHTML(for item: StoredItem, theme: ConsoleThemePreset) -> String {
+private func makeCanvasHTML(for item: StoredItem, backdropMode: CanvasBackdropMode) -> String {
     return """
     <!DOCTYPE html>
     <html>
@@ -452,8 +672,8 @@ private func makeCanvasHTML(for item: StoredItem, theme: ConsoleThemePreset) -> 
           html, body {
             margin: 0;
             min-height: 100%;
-            background: \(theme.previewBg.cssHex);
-            color: \(theme.text.cssHex);
+            background: \(backdropMode.backgroundColor.cssHex);
+            color: \(backdropMode.foregroundColor.cssHex);
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           }
           body {
@@ -494,6 +714,8 @@ private struct CanvasToolbar: View {
                                         isSelected: model.selectedID == item.id
                                     ) {
                                         model.selectTab(id: item.id)
+                                    } onClose: {
+                                        model.closeTab(id: item.id)
                                     }
                                 }
                             }
@@ -525,6 +747,7 @@ private struct CanvasToolbar: View {
 }
 
 private struct CanvasCard: View {
+    @ObservedObject var model: AppModel
     let item: StoredItem
     let theme: ConsoleThemePreset
     let zoomScale: CGFloat
@@ -532,13 +755,16 @@ private struct CanvasCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            CanvasHeader(theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
+            CanvasHeader(model: model, theme: theme, item: item, isActive: isActive, zoomScale: zoomScale)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(theme.previewBg)
+                    .fill(model.canvasBackdropMode.backgroundColor)
 
-                CanvasRendererView(html: makeCanvasHTML(for: item, theme: theme), zoomScale: zoomScale)
+                CanvasRendererView(
+                    html: makeCanvasHTML(for: item, backdropMode: model.canvasBackdropMode),
+                    zoomScale: zoomScale
+                )
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .padding(8)
             }
@@ -555,6 +781,7 @@ private struct CanvasCard: View {
 }
 
 private struct CanvasHeader: View {
+    @ObservedObject var model: AppModel
     let theme: ConsoleThemePreset
     let item: StoredItem
     let isActive: Bool
@@ -583,9 +810,15 @@ private struct CanvasHeader: View {
             Spacer(minLength: 0)
 
             if isActive {
-                Image(systemName: "sparkles.tv")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(theme.accent2)
+                Button(action: model.toggleCanvasBackdropMode) {
+                    Image(systemName: model.canvasBackdropMode.symbolName)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(theme.accent2)
+                        .frame(width: 24, height: 24)
+                        .background(theme.accent2.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help(model.canvasBackdropMode.toggleLabel)
             }
         }
         .padding(.horizontal, 14)
@@ -701,32 +934,51 @@ private struct CanvasTabButton: View {
     let theme: ConsoleThemePreset
     let isSelected: Bool
     let action: () -> Void
+    let onClose: () -> Void
+    @State private var isHovered = false
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(isSelected ? theme.accent2 : theme.textSecondary.opacity(0.35))
-                    .frame(width: 6, height: 6)
+        ZStack {
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isSelected ? theme.accent2 : theme.textSecondary.opacity(0.35))
+                        .frame(width: 6, height: 6)
 
-                Text(item.name)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium, design: .rounded))
-                    .truncationMode(.tail)
-                    .lineLimit(1)
+                    Text(item.name)
+                        .font(.system(size: 11, weight: isSelected ? .semibold : .medium, design: .rounded))
+                        .truncationMode(.tail)
+                        .lineLimit(1)
 
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .black))
+                    trailingAccessory
+                }
+                .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary.opacity(0.82))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(backgroundShape)
+            }
+            .buttonStyle(.plain)
+
+            if isHovered {
+                HStack {
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary)
+                            .frame(width: 16, height: 16)
+                            .background(Color.black.opacity(isSelected ? 0.14 : 0.10), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 10)
                 }
             }
-            .foregroundStyle(isSelected ? theme.textPrimary : theme.textSecondary.opacity(0.82))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(backgroundShape)
         }
-        .buttonStyle(.plain)
         .frame(maxWidth: 220)
         .zIndex(isSelected ? 1 : 0)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 
     @ViewBuilder
@@ -743,6 +995,21 @@ private struct CanvasTabButton: View {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(theme.text.opacity(0.05), lineWidth: 1)
                 )
+        }
+    }
+
+    @ViewBuilder
+    private var trailingAccessory: some View {
+        if isHovered {
+            Color.clear
+                .frame(width: 16, height: 16)
+        } else if isSelected {
+            Image(systemName: "checkmark")
+                .font(.system(size: 9, weight: .black))
+                .frame(width: 16, height: 16)
+        } else {
+            Color.clear
+                .frame(width: 16, height: 16)
         }
     }
 }
@@ -828,24 +1095,6 @@ private struct EditorPanel: View {
     var body: some View {
         VStack(spacing: 6) {
             HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text((currentItem?.name ?? "NO_ITEM").uppercased())
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .italic()
-                        .tracking(1.2)
-                        .foregroundStyle(theme.textPrimary)
-                        .lineLimit(1)
-
-                    Text((currentItem?.type ?? "UNASSIGNED").uppercased())
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
-                        .tracking(1.8)
-                        .foregroundStyle(theme.textSecondary)
-                        .lineLimit(1)
-                }
-                .layoutPriority(1)
-
-                Spacer(minLength: 8)
-
                 HStack(alignment: .top, spacing: 8) {
                     HStack(spacing: 6) {
                         ForEach(EditorTab.allCases) { tab in
@@ -862,6 +1111,7 @@ private struct EditorPanel: View {
                         .padding(.top, 2)
                         .padding(.leading, 6)
                 }
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
             .padding(.leading, 12)
@@ -1070,6 +1320,9 @@ private struct ItemListPanel: View {
     let items: [StoredItem]
     @Binding var selectedID: String?
     let rename: (String, String) -> Void
+    let duplicate: (String) -> Void
+    let delete: (String) -> Void
+    let onEditCollection: (StoredItem) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1081,7 +1334,10 @@ private struct ItemListPanel: View {
                             item: item,
                             isSelected: item.id == selectedID,
                             onSelect: { selectedID = item.id },
-                            onRename: { rename(item.id, $0) }
+                            onRename: { rename(item.id, $0) },
+                            onDuplicate: { duplicate(item.id) },
+                            onDelete: { delete(item.id) },
+                            onEditCollection: { onEditCollection(item) }
                         )
                     }
                 }
@@ -1105,6 +1361,9 @@ private struct ItemRow: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onRename: (String) -> Void
+    let onDuplicate: () -> Void
+    let onDelete: () -> Void
+    let onEditCollection: () -> Void
 
     @State private var isEditing = false
     @State private var draftName = ""
@@ -1115,33 +1374,52 @@ private struct ItemRow: View {
             PolygonRowShape()
                 .fill(isSelected ? theme.selectedLight : theme.panelDeep.opacity(0.82))
 
-            Group {
-                if isEditing {
-                    TextField("", text: $draftName)
-                        .textFieldStyle(.plain)
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: 8, weight: .black, design: .rounded))
-                        .italic()
-                        .textCase(.uppercase)
-                        .foregroundStyle(isSelected ? theme.selectedText : theme.textPrimary)
-                        .focused($isFocused)
-                        .onSubmit(commitRename)
-                        .onExitCommand(perform: cancelRename)
-                        .onChange(of: isFocused) { focused in
-                            if !focused && isEditing {
-                                commitRename()
+            HStack(spacing: 8) {
+                Group {
+                    if isEditing {
+                        TextField("", text: $draftName)
+                            .textFieldStyle(.plain)
+                            .multilineTextAlignment(.leading)
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .italic()
+                            .textCase(.uppercase)
+                            .foregroundStyle(isSelected ? theme.selectedText : theme.textPrimary)
+                            .focused($isFocused)
+                            .onSubmit(commitRename)
+                            .onExitCommand(perform: cancelRename)
+                            .onChange(of: isFocused) { focused in
+                                if !focused && isEditing {
+                                    commitRename()
+                                }
                             }
-                        }
-                } else {
-                    Text(item.name.uppercased())
-                        .font(.system(size: 8, weight: .black, design: .rounded))
-                        .italic()
-                        .tracking(-0.2)
-                        .foregroundStyle(isSelected ? theme.selectedText : theme.textMuted)
-                        .lineLimit(1)
+                    } else {
+                        Text(item.name.uppercased())
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .italic()
+                            .tracking(-0.2)
+                            .foregroundStyle(isSelected ? theme.selectedText : theme.textMuted)
+                            .lineLimit(1)
+                    }
                 }
+                Spacer(minLength: 0)
+
+                Menu {
+                    Button("Rename", action: beginEditing)
+                    Button("Add to Collection", action: editCollection)
+                    Button("Duplicate", action: duplicateItem)
+                    Button("Delete", role: .destructive, action: deleteItem)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 11, weight: .black))
+                        .foregroundStyle(isSelected ? theme.selectedText : theme.textSecondary)
+                        .frame(width: 24, height: 24)
+                        .background(theme.topRed.opacity(isSelected ? 0.22 : 0.36), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                .menuStyle(.borderlessButton)
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
+            .padding(.leading, 16)
+            .padding(.trailing, 12)
         }
         .frame(height: 36)
         .contentShape(PolygonRowShape())
@@ -1172,6 +1450,21 @@ private struct ItemRow: View {
     private func cancelRename() {
         isEditing = false
         draftName = ""
+    }
+
+    private func duplicateItem() {
+        onSelect()
+        onDuplicate()
+    }
+
+    private func editCollection() {
+        onSelect()
+        onEditCollection()
+    }
+
+    private func deleteItem() {
+        onSelect()
+        onDelete()
     }
 }
 
@@ -1556,6 +1849,316 @@ private struct AddItemOverlay: View {
     }
 }
 
+private struct AddCollectionOverlay: View {
+    let theme: ConsoleThemePreset
+    @Binding var collectionName: String
+    let onClose: () -> Void
+    let onConfirm: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onClose)
+
+            VStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    HStack {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(theme.accent2.opacity(0.18))
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(theme.accent2.opacity(0.30), lineWidth: 1)
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(theme.accent2)
+                            }
+                            .frame(width: 40, height: 40)
+
+                            Text("ADD COLLECTION")
+                                .font(.system(size: 22, weight: .black, design: .rounded))
+                                .italic()
+                                .foregroundStyle(theme.textPrimary)
+                        }
+
+                        Spacer()
+
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 12)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("COLLECTION NAME")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .tracking(1.8)
+                            .foregroundStyle(theme.accent2)
+
+                        TextField("ENTER NAME...", text: $collectionName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .foregroundStyle(theme.textPrimary)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(theme.panelDeep.opacity(0.96))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(Color(red: 0.12, green: 0.12, blue: 0.12), lineWidth: 2)
+                            )
+                            .focused($isFocused)
+                            .onSubmit(confirm)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+
+                    VStack(spacing: 12) {
+                        AngledModalButton(title: "CONFIRM COLLECTION", foreground: .black, background: .white, action: confirm)
+                        AngledModalButton(title: "CANCEL", foreground: theme.textMuted, background: theme.panel2, action: onClose)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+
+                    Rectangle()
+                        .fill(theme.accent2.opacity(0.5))
+                        .frame(height: 8)
+                }
+                .background(theme.panel2)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            }
+            .padding(24)
+            .frame(width: 460)
+            .background(theme.bottomRed)
+            .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.55), radius: 40, x: 0, y: 20)
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                isFocused = true
+            }
+        }
+    }
+
+    private func confirm() {
+        let trimmed = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        collectionName = trimmed
+        onConfirm()
+    }
+}
+
+private struct ItemCollectionOverlay: View {
+    let theme: ConsoleThemePreset
+    let itemName: String
+    let collections: [StoredCollection]
+    let initialCollectionID: String?
+    let onClose: () -> Void
+    let onConfirm: (String?) -> Void
+
+    @State private var selectedCollectionID: String?
+
+    init(
+        theme: ConsoleThemePreset,
+        itemName: String,
+        collections: [StoredCollection],
+        initialCollectionID: String?,
+        onClose: @escaping () -> Void,
+        onConfirm: @escaping (String?) -> Void
+    ) {
+        self.theme = theme
+        self.itemName = itemName
+        self.collections = collections
+        self.initialCollectionID = initialCollectionID
+        self.onClose = onClose
+        self.onConfirm = onConfirm
+        _selectedCollectionID = State(initialValue: initialCollectionID)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onClose)
+
+            VStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    HStack {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(theme.accent.opacity(0.18))
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(theme.accent.opacity(0.30), lineWidth: 1)
+                                Image(systemName: "folder.badge.gearshape")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(theme.accent)
+                            }
+                            .frame(width: 40, height: 40)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("ADD TO COLLECTION")
+                                    .font(.system(size: 22, weight: .black, design: .rounded))
+                                    .italic()
+                                    .foregroundStyle(theme.textPrimary)
+
+                                Text(itemName.uppercased())
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .tracking(1.2)
+                                    .foregroundStyle(theme.textSecondary)
+                                    .lineLimit(1)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button(action: onClose) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
+                    .padding(.bottom, 12)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("SELECT DESTINATION")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .tracking(1.8)
+                            .foregroundStyle(theme.accent)
+
+                        VStack(spacing: 8) {
+                            CollectionSelectionRow(
+                                theme: theme,
+                                title: "ALL ITEMS",
+                                subtitle: "REMOVE FROM CUSTOM COLLECTIONS",
+                                isSelected: selectedCollectionID == nil
+                            ) {
+                                toggleSelection(nil)
+                            }
+
+                            if collections.isEmpty {
+                                Text("NO COLLECTIONS YET")
+                                    .font(.system(size: 10, weight: .black, design: .monospaced))
+                                    .tracking(1.2)
+                                    .foregroundStyle(theme.textSecondary.opacity(0.72))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            } else {
+                                ForEach(collections) { collection in
+                                    CollectionSelectionRow(
+                                        theme: theme,
+                                        title: collection.name.uppercased(),
+                                        subtitle: "TOGGLE MEMBERSHIP",
+                                        isSelected: selectedCollectionID == collection.id
+                                    ) {
+                                        toggleSelection(collection.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+
+                    VStack(spacing: 12) {
+                        AngledModalButton(title: "CONFIRM COLLECTION", foreground: .black, background: .white, action: confirm)
+                        AngledModalButton(title: "CANCEL", foreground: theme.textMuted, background: theme.panel2, action: onClose)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+
+                    Rectangle()
+                        .fill(theme.accent.opacity(0.5))
+                        .frame(height: 8)
+                }
+                .background(theme.panel2)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            }
+            .padding(24)
+            .frame(width: 520)
+            .background(theme.bottomRed)
+            .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.55), radius: 40, x: 0, y: 20)
+        }
+    }
+
+    private func toggleSelection(_ id: String?) {
+        if selectedCollectionID == id {
+            selectedCollectionID = nil
+        } else {
+            selectedCollectionID = id
+        }
+    }
+
+    private func confirm() {
+        onConfirm(selectedCollectionID)
+    }
+}
+
+private struct CollectionSelectionRow: View {
+    let theme: ConsoleThemePreset
+    let title: String
+    let subtitle: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+
+                    Text(subtitle)
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(1.1)
+                        .foregroundStyle(theme.textSecondary)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? theme.panelDeep.opacity(0.92) : theme.panelDeep.opacity(0.72))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? theme.accent : theme.stroke.opacity(0.6), lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 private struct AngledModalButton: View {
     let title: String
     let foreground: Color
@@ -1655,8 +2258,60 @@ enum CanvasZoomPreset: CGFloat, CaseIterable, Identifiable {
     }
 }
 
+enum CanvasBackdropMode: Equatable {
+    case dark
+    case light
+
+    var backgroundColor: Color {
+        switch self {
+        case .dark:
+            return .black
+        case .light:
+            return .white
+        }
+    }
+
+    var foregroundColor: Color {
+        switch self {
+        case .dark:
+            return .white
+        case .light:
+            return .black
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .dark:
+            return "moon.fill"
+        case .light:
+            return "sun.max.fill"
+        }
+    }
+
+    var toggleLabel: String {
+        switch self {
+        case .dark:
+            return "Switch preview backdrop to white"
+        case .light:
+            return "Switch preview backdrop to black"
+        }
+    }
+
+    mutating func toggle() {
+        self = self == .dark ? .light : .dark
+    }
+}
+
 final class AppModel: ObservableObject {
+    @Published var collections: [StoredCollection] = []
     @Published var items: [StoredItem] = []
+    @Published var selectedCollectionID: String? {
+        didSet {
+            guard selectedCollectionID != oldValue else { return }
+            syncSelectionForCurrentCollection()
+        }
+    }
     @Published var selectedID: String? {
         didSet {
             guard selectedID != oldValue else { return }
@@ -1666,6 +2321,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var openTabIDs: [String] = []
     @Published var activeTab: EditorTab = .html
     @Published var canvasZoom: CGFloat = CanvasZoomPreset.oneHundred.scale
+    @Published var canvasBackdropMode: CanvasBackdropMode = .dark
     @Published var statusText = "Ready"
 
     private let store: ItemStore
@@ -1678,12 +2334,19 @@ final class AppModel: ObservableObject {
     }
 
     var currentItem: StoredItem? {
-        items.first(where: { $0.id == selectedID }) ?? items.first
+        filteredItems.first(where: { $0.id == selectedID }) ?? filteredItems.first
+    }
+
+    var filteredItems: [StoredItem] {
+        guard let selectedCollectionID else { return items }
+        return items.filter { $0.collectionID == selectedCollectionID }
     }
 
     var openTabs: [StoredItem] {
-        openTabIDs.compactMap { id in
-            items.first(where: { $0.id == id })
+        let filteredItemIDs = Set(filteredItems.map(\.id))
+        return openTabIDs.compactMap { id -> StoredItem? in
+            guard filteredItemIDs.contains(id) else { return nil }
+            return items.first(where: { $0.id == id })
         }
     }
 
@@ -1721,6 +2384,7 @@ final class AppModel: ObservableObject {
                 payload: CreateItemPayload(
                     name: resolvedItemName(from: name),
                     type: "UI Component",
+                    collectionID: selectedCollectionID,
                     html: "",
                     css: "",
                     js: "",
@@ -1736,18 +2400,78 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func addCollection(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        do {
+            let collection = try store.createCollection(named: trimmed)
+            collections.append(collection)
+            selectedCollectionID = collection.id
+            statusText = "Added \(collection.name)"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    func renameCollection(id: String, to value: String) {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard let index = collections.firstIndex(where: { $0.id == id }) else { return }
+
+        do {
+            let collection = try store.updateCollection(id: id, name: trimmed)
+            collections[index] = collection
+            statusText = "Renamed collection"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    func deleteCollection(id: String) {
+        guard collections.contains(where: { $0.id == id }) else { return }
+
+        do {
+            try store.deleteCollection(id: id)
+            collections.removeAll { $0.id == id }
+            for index in items.indices where items[index].collectionID == id {
+                items[index].collectionID = nil
+            }
+            if selectedCollectionID == id {
+                selectedCollectionID = nil
+            } else {
+                syncSelectionForCurrentCollection()
+            }
+            statusText = "Deleted collection"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
     func deleteSelectedItem() {
         guard let id = currentItem?.id else { return }
+        deleteItem(id: id)
+    }
 
+    func deleteItem(id: String) {
+        guard items.contains(where: { $0.id == id }) else { return }
+
+        flushPendingSave()
+
+        let deletedName = items.first(where: { $0.id == id })?.name ?? "item"
         do {
             try store.deleteStoredItem(id: id)
             items.removeAll { $0.id == id }
             openTabIDs.removeAll { $0 == id }
-            if openTabIDs.isEmpty, let firstID = items.first?.id {
+            if openTabIDs.isEmpty, let firstID = filteredItems.first?.id ?? items.first?.id {
                 openTabIDs = [firstID]
             }
-            selectedID = openTabIDs.first ?? items.first?.id
-            statusText = "Deleted item"
+            if selectedID == id {
+                selectedID = openTabIDs.first ?? filteredItems.first?.id ?? items.first?.id
+            } else {
+                syncSelectionForCurrentCollection()
+            }
+            statusText = "Deleted \(deletedName)"
         } catch {
             statusText = error.localizedDescription
         }
@@ -1761,6 +2485,65 @@ final class AppModel: ObservableObject {
         guard items.contains(where: { $0.id == id }) else { return }
         updateLocalItem(id: id, field: "name", value: value)
         scheduleSave(id: id, patch: ["name": value])
+    }
+
+    func assignItem(id: String, toCollectionID collectionID: String?) {
+        guard items.contains(where: { $0.id == id }) else { return }
+
+        flushPendingSave()
+
+        do {
+            let item = try store.updateStoredItem(id: id, patch: ["collectionID": collectionID ?? ""])
+            if let index = items.firstIndex(where: { $0.id == id }) {
+                items[index] = item
+            }
+
+            if let selectedCollectionID, item.collectionID != selectedCollectionID {
+                openTabIDs.removeAll { $0 == id }
+                if selectedID == id {
+                    syncSelectionForCurrentCollection()
+                }
+            }
+
+            if let collectionID = item.collectionID,
+               let collection = collections.first(where: { $0.id == collectionID }) {
+                statusText = "Moved \(item.name) to \(collection.name)"
+            } else {
+                statusText = "Removed \(item.name) from collections"
+            }
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    func duplicateItem(id: String) {
+        guard let sourceItem = items.first(where: { $0.id == id }) else { return }
+
+        flushPendingSave()
+
+        do {
+            let duplicatedItem = try store.createStoredItem(
+                payload: CreateItemPayload(
+                    name: duplicatedItemName(from: sourceItem.name),
+                    type: sourceItem.type,
+                    collectionID: sourceItem.collectionID,
+                    html: sourceItem.html,
+                    css: sourceItem.css,
+                    js: sourceItem.js,
+                    all: sourceItem.all
+                )
+            )
+            items.append(duplicatedItem)
+            openTabIDs.append(duplicatedItem.id)
+            selectedID = duplicatedItem.id
+            statusText = "Duplicated \(sourceItem.name)"
+        } catch {
+            statusText = error.localizedDescription
+        }
+    }
+
+    func selectCollection(_ id: String?) {
+        selectedCollectionID = id
     }
 
     func updateSelectedType(_ value: String) {
@@ -1893,8 +2676,9 @@ final class AppModel: ObservableObject {
 
     private func reload() {
         do {
+            collections = try store.loadCollections()
             items = try store.loadItems()
-            let firstID = items.first?.id
+            let firstID = filteredItems.first?.id
             openTabIDs = firstID.map { [$0] } ?? []
             selectedID = firstID
         } catch {
@@ -1907,8 +2691,20 @@ final class AppModel: ObservableObject {
         selectedID = id
     }
 
+    func closeTab(id: String) {
+        guard let index = openTabIDs.firstIndex(of: id), openTabIDs.count > 1 else { return }
+
+        openTabIDs.remove(at: index)
+
+        guard selectedID == id else { return }
+
+        let replacementIndex = min(index, openTabIDs.count - 1)
+        selectedID = openTabIDs[replacementIndex]
+    }
+
     private func syncOpenTabs(previousSelectedID: String?, newSelectedID: String?) {
         guard let newSelectedID else { return }
+        guard filteredItems.contains(where: { $0.id == newSelectedID }) else { return }
 
         if openTabIDs.contains(newSelectedID) {
             return
@@ -1937,6 +2733,10 @@ final class AppModel: ObservableObject {
         setZoom(nextZoom(increasing: false))
     }
 
+    func toggleCanvasBackdropMode() {
+        canvasBackdropMode.toggle()
+    }
+
     private func setZoom(_ scale: CGFloat) {
         canvasZoom = min(max(scale, CanvasZoomPreset.allCases.first?.scale ?? 0.5), CanvasZoomPreset.allCases.last?.scale ?? 2.0)
     }
@@ -1958,14 +2758,49 @@ final class AppModel: ObservableObject {
         return "\(prefix)\((usedNumbers.max() ?? 0) + 1)"
     }
 
+    func nextDefaultCollectionName() -> String {
+        let prefix = "Collection "
+        let usedNumbers = collections.compactMap { collection -> Int? in
+            guard collection.name.hasPrefix(prefix) else { return nil }
+            return Int(collection.name.dropFirst(prefix.count))
+        }
+        return "\(prefix)\((usedNumbers.max() ?? 0) + 1)"
+    }
+
     private func resolvedItemName(from name: String?) -> String {
         let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nextDefaultName() : trimmed
+    }
+
+    private func duplicatedItemName(from name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baseName = trimmed.isEmpty ? nextDefaultName() : trimmed
+        var candidate = "\(baseName) Copy"
+        var copyNumber = 2
+
+        while items.contains(where: { $0.name == candidate }) {
+            candidate = "\(baseName) Copy \(copyNumber)"
+            copyNumber += 1
+        }
+
+        return candidate
     }
 
     private func backupFileName() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
         return "GUI-Bag-Backup-\(formatter.string(from: Date())).json"
+    }
+
+    private func syncSelectionForCurrentCollection() {
+        let visibleItems = filteredItems
+
+        if let selectedID, visibleItems.contains(where: { $0.id == selectedID }) {
+            return
+        }
+
+        let firstID = visibleItems.first?.id
+        openTabIDs = firstID.map { [$0] } ?? []
+        selectedID = firstID
     }
 }

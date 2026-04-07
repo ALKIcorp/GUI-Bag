@@ -1,11 +1,19 @@
 import Foundation
 
-private let schemaVersion = 1
+private let schemaVersion = 2
+
+struct StoredCollection: Codable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var createdAt: String?
+    var updatedAt: String?
+}
 
 struct StoredItem: Codable, Identifiable, Hashable {
     var id: String
     var name: String
     var type: String
+    var collectionID: String?
     var html: String
     var css: String
     var js: String
@@ -18,18 +26,53 @@ struct ItemDatabase: Codable {
     var schemaVersion: Int
     var nextId: Int
     var updatedAt: String
+    var collections: [StoredCollection]
     var items: [StoredItem]
+
+    init(schemaVersion: Int, nextId: Int, updatedAt: String, collections: [StoredCollection], items: [StoredItem]) {
+        self.schemaVersion = schemaVersion
+        self.nextId = nextId
+        self.updatedAt = updatedAt
+        self.collections = collections
+        self.items = items
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        nextId = try container.decodeIfPresent(Int.self, forKey: .nextId) ?? 1
+        updatedAt = try container.decodeIfPresent(String.self, forKey: .updatedAt) ?? ""
+        collections = try container.decodeIfPresent([StoredCollection].self, forKey: .collections) ?? []
+        items = try container.decodeIfPresent([StoredItem].self, forKey: .items) ?? []
+    }
 }
 
 struct ItemBackup: Codable {
     var schemaVersion: Int
     var exportedAt: String
+    var collections: [StoredCollection]
     var items: [StoredItem]
+
+    init(schemaVersion: Int, exportedAt: String, collections: [StoredCollection], items: [StoredItem]) {
+        self.schemaVersion = schemaVersion
+        self.exportedAt = exportedAt
+        self.collections = collections
+        self.items = items
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 0
+        exportedAt = try container.decodeIfPresent(String.self, forKey: .exportedAt) ?? ""
+        collections = try container.decodeIfPresent([StoredCollection].self, forKey: .collections) ?? []
+        items = try container.decodeIfPresent([StoredItem].self, forKey: .items) ?? []
+    }
 }
 
 struct CreateItemPayload: Decodable {
     var name: String?
     var type: String?
+    var collectionID: String?
     var html: String?
     var css: String?
     var js: String?
@@ -39,6 +82,7 @@ struct CreateItemPayload: Decodable {
 enum ItemStoreError: Error, LocalizedError {
     case invalidPayload
     case itemNotFound
+    case collectionNotFound
     case invalidBackup
 
     var errorDescription: String? {
@@ -47,6 +91,8 @@ enum ItemStoreError: Error, LocalizedError {
             return "Invalid payload"
         case .itemNotFound:
             return "Item not found"
+        case .collectionNotFound:
+            return "Collection not found"
         case .invalidBackup:
             return "Backup file is invalid"
         }
@@ -81,13 +127,19 @@ final class ItemStore {
         try loadDatabase().items
     }
 
+    func loadCollections() throws -> [StoredCollection] {
+        try loadDatabase().collections
+    }
+
     func createStoredItem(payload: CreateItemPayload) throws -> StoredItem {
         var db = try loadDatabase()
         let now = Self.utcNow()
+        let collectionID = normalizedCollectionID(payload.collectionID, collections: db.collections)
         let item = StoredItem(
             id: String(db.nextId),
             name: payload.name?.isEmpty == false ? payload.name! : "NEW_CODE",
             type: payload.type?.isEmpty == false ? payload.type! : "UI",
+            collectionID: collectionID,
             html: payload.html ?? "",
             css: payload.css ?? "",
             js: payload.js ?? "",
@@ -105,7 +157,7 @@ final class ItemStore {
     }
 
     func updateStoredItem(id: String, patch: [String: String]) throws -> StoredItem {
-        let allowedFields = Set(["name", "type", "html", "css", "js", "all"])
+        let allowedFields = Set(["name", "type", "collectionID", "html", "css", "js", "all"])
         let patch = patch.filter { allowedFields.contains($0.key) }
         guard !patch.isEmpty else {
             throw ItemStoreError.invalidPayload
@@ -123,6 +175,8 @@ final class ItemStore {
                 item.name = value
             case "type":
                 item.type = value
+            case "collectionID":
+                item.collectionID = normalizedCollectionID(value, collections: db.collections)
             case "html":
                 item.html = value
             case "css":
@@ -157,11 +211,72 @@ final class ItemStore {
         try saveDatabase(db)
     }
 
+    func createCollection(named name: String) throws -> StoredCollection {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw ItemStoreError.invalidPayload
+        }
+
+        var db = try loadDatabase()
+        let now = Self.utcNow()
+        let collection = StoredCollection(
+            id: String(db.nextId),
+            name: trimmed,
+            createdAt: now,
+            updatedAt: nil
+        )
+
+        db.nextId += 1
+        db.updatedAt = now
+        db.collections.append(collection)
+        try saveDatabase(db)
+
+        return collection
+    }
+
+    func updateCollection(id: String, name: String) throws -> StoredCollection {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw ItemStoreError.invalidPayload
+        }
+
+        var db = try loadDatabase()
+        guard let index = db.collections.firstIndex(where: { $0.id == id }) else {
+            throw ItemStoreError.collectionNotFound
+        }
+
+        db.collections[index].name = trimmed
+        db.collections[index].updatedAt = Self.utcNow()
+        db.updatedAt = db.collections[index].updatedAt ?? db.updatedAt
+        try saveDatabase(db)
+
+        return db.collections[index]
+    }
+
+    func deleteCollection(id: String) throws {
+        var db = try loadDatabase()
+        let originalCount = db.collections.count
+        db.collections.removeAll { $0.id == id }
+
+        guard db.collections.count != originalCount else {
+            throw ItemStoreError.collectionNotFound
+        }
+
+        for index in db.items.indices where db.items[index].collectionID == id {
+            db.items[index].collectionID = nil
+            db.items[index].updatedAt = Self.utcNow()
+        }
+
+        db.updatedAt = Self.utcNow()
+        try saveDatabase(db)
+    }
+
     func exportBackup(to url: URL) throws {
         let db = try loadDatabase()
         let backup = ItemBackup(
             schemaVersion: db.schemaVersion,
             exportedAt: Self.utcNow(),
+            collections: db.collections,
             items: db.items
         )
         let data = try encoder.encode(backup)
@@ -170,15 +285,17 @@ final class ItemStore {
 
     func importBackup(from url: URL) throws -> [StoredItem] {
         let data = try Data(contentsOf: url)
-        let importedItems = try decodeBackupItems(from: data)
+        let backup = try decodeBackup(from: data)
+        let importedItems = backup.items
 
         var db = try loadDatabase()
         let now = Self.utcNow()
-        let appendedItems = importedItems.map { importedItem in
+        var appendedItems = importedItems.map { importedItem in
             let item = StoredItem(
                 id: String(db.nextId),
                 name: importedItem.name.isEmpty ? "NEW_CODE" : importedItem.name,
                 type: importedItem.type.isEmpty ? "UI Component" : importedItem.type,
+                collectionID: importedItem.collectionID,
                 html: importedItem.html,
                 css: importedItem.css,
                 js: importedItem.js,
@@ -188,6 +305,28 @@ final class ItemStore {
             )
             db.nextId += 1
             return item
+        }
+
+        let importedCollections = importedItems.reduce(into: Set<String>()) { result, item in
+            if let collectionID = item.collectionID {
+                result.insert(collectionID)
+            }
+        }
+
+        for collection in backup.collections {
+            guard importedCollections.contains(collection.id) else { continue }
+            let remappedCollection = StoredCollection(
+                id: String(db.nextId),
+                name: collection.name.isEmpty ? "Collection" : collection.name,
+                createdAt: collection.createdAt ?? now,
+                updatedAt: collection.updatedAt
+            )
+            db.nextId += 1
+            db.collections.append(remappedCollection)
+
+            for index in appendedItems.indices where appendedItems[index].collectionID == collection.id {
+                appendedItems[index].collectionID = remappedCollection.id
+            }
         }
 
         db.items.append(contentsOf: appendedItems)
@@ -227,28 +366,55 @@ final class ItemStore {
         try data.write(to: dbURL, options: .atomic)
     }
 
-    private func decodeBackupItems(from data: Data) throws -> [StoredItem] {
+    private func decodeBackup(from data: Data) throws -> ItemBackup {
         if let backup = try? decoder.decode(ItemBackup.self, from: data) {
-            return backup.items
+            return backup
         }
 
         if let database = try? decoder.decode(ItemDatabase.self, from: data) {
-            return database.items
+            return ItemBackup(
+                schemaVersion: database.schemaVersion,
+                exportedAt: database.updatedAt,
+                collections: database.collections,
+                items: database.items
+            )
         }
 
         if let items = try? decoder.decode([StoredItem].self, from: data) {
-            return items
+            return ItemBackup(
+                schemaVersion: schemaVersion,
+                exportedAt: Self.utcNow(),
+                collections: [],
+                items: items
+            )
         }
 
         throw ItemStoreError.invalidBackup
     }
 
     private func normalize(_ database: ItemDatabase) -> ItemDatabase {
-        ItemDatabase(
+        let collections = database.collections.map { collection in
+            StoredCollection(
+                id: collection.id,
+                name: collection.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Collection" : collection.name,
+                createdAt: collection.createdAt,
+                updatedAt: collection.updatedAt
+            )
+        }
+
+        let validCollectionIDs = Set(collections.map(\.id))
+        return ItemDatabase(
             schemaVersion: database.schemaVersion > 0 ? database.schemaVersion : schemaVersion,
             nextId: max(database.nextId, 1),
             updatedAt: database.updatedAt.isEmpty ? Self.utcNow() : database.updatedAt,
-            items: database.items
+            collections: collections,
+            items: database.items.map { item in
+                var item = item
+                if let collectionID = item.collectionID, !validCollectionIDs.contains(collectionID) {
+                    item.collectionID = nil
+                }
+                return item
+            }
         )
     }
 
@@ -257,11 +423,13 @@ final class ItemStore {
             schemaVersion: schemaVersion,
             nextId: 3,
             updatedAt: Self.utcNow(),
+            collections: [],
             items: [
                 StoredItem(
                     id: "1",
                     name: "Super Potion",
                     type: "UI Component",
+                    collectionID: nil,
                     html: "<button class=\"potion-btn\">Heal 50HP</button>",
                     css: """
                     .potion-btn {
@@ -290,6 +458,7 @@ final class ItemStore {
                     id: "2",
                     name: "Lemonade",
                     type: "Beverage",
+                    collectionID: nil,
                     html: "<div class=\"lemon-loader\"></div>",
                     css: """
                     .lemon-loader {
@@ -314,6 +483,12 @@ final class ItemStore {
             ]
         )
     }
+
+    private func normalizedCollectionID(_ collectionID: String?, collections: [StoredCollection]) -> String? {
+        guard let collectionID, !collectionID.isEmpty else { return nil }
+        return collections.contains(where: { $0.id == collectionID }) ? collectionID : nil
+    }
+
     private static func utcNow() -> String {
         ISO8601DateFormatter().string(from: Date())
     }
