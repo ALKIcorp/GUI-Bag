@@ -37,19 +37,10 @@ struct LaunchRootView: View {
 private struct SplashScreenView: View {
     var body: some View {
         VStack(spacing: 18) {
-            Group {
-                if let icon = BundledApplicationIcon.nsImage() {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                } else {
-                    Image("GUIBagSplashIcon")
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                }
-            }
+            Image("GUIBagSplashIcon")
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
             .frame(width: 154, height: 154)
             .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 12)
 
