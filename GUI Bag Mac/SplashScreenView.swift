@@ -67,6 +67,11 @@ private struct SplashScreenView: View {
                     .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 14))
             )
             .foregroundStyle(.white.opacity(0.9))
+
+            Text("All Rights Reserved.")
+                .font(.custom(AppFonts.helveticaNeueLTStdBold, size: 10))
+                .foregroundStyle(.white.opacity(0.8))
+                .padding(.top, 8)
         }
         .padding(.horizontal, 36)
         .padding(.vertical, 32)
